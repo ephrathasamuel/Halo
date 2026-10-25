@@ -116,7 +116,7 @@ npm test
 
 ---
 
-## 📄 License & Academic Attribution
+## License & Academic Attribution
 
 Created for the **IBT-QIYAS Full-Stack Software Development Program** (Module 3 Frontend Capstone).
 All rights reserved © 2026 Halo Marketplace.
