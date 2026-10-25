@@ -15,5 +15,8 @@ Each entry records a design decision with a one-line rationale.
 | 9 | Local git repository initialized directly in Halo folder | Isolates project history, branches, and commits from parent Desktop workspace |
 | 10 | Server page with generateMetadata delegating to client component | Allows SEO metadata generation while preserving client storage reactivity |
 | 11 | Leaflet dynamic import (ssr: false) with permanent text fallback | Avoids SSR window errors while guaranteeing accessibility if maps fail to load |
-| 12 | SafeImage with broken-image SVG fallback | Prevents missing image broken icons when mock images are missing |
+| 13 | Native ESLint 9 flat config with eslint-plugin-react | Eliminates legacy FlatCompat Windows resolution hangs and enables core jsx linting |
+| 14 | SessionStorage checkout draft with automatic expiration warning | Preserves selected slots and add-on equipment without polluting durable storage |
+| 15 | Studio buffer conflict interval [start - buffer, end + buffer] | Accurately prevents back-to-back studio rental clashes across cleanup windows |
+| 16 | Equipment availability bounded by active overlapping rentals | Accurately enforces physical stock limits (quantity minus concurrent bookings) |
 

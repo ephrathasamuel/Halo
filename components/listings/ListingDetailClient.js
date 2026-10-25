@@ -9,6 +9,7 @@ import { SafeImage } from '@/components/ui/SafeImage';
 import { StorefrontMap } from '@/components/maps/StorefrontMap';
 import { EmptyState } from '@/components/states/EmptyState';
 import { useSession } from '@/hooks/useSession';
+import { BookingPanel } from '@/components/booking/BookingPanel';
 
 /**
  * Client component for listing details.
@@ -291,72 +292,34 @@ export function ListingDetailClient({ id }) {
 
         {/* Right Column: Pricing & Booking Panel */}
         <aside className="lg:sticky lg:top-6 space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-lg space-y-6">
-            {/* Price Headline */}
-            <div className="border-b border-slate-100 pb-4">
-              {isService ? (
-                <div>
-                  <span className="text-xs text-slate-500 font-semibold block uppercase tracking-wider">
-                    Custom Quote Model
+          {isService ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-lg space-y-6">
+              <div className="border-b border-slate-100 pb-4">
+                <span className="text-xs text-slate-500 font-semibold block uppercase tracking-wider">
+                  Custom Quote Model
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="text-xs text-slate-400">Starting from</span>
+                  <span className="text-2xl font-black text-slate-900">
+                    {formatETB(listing.startingFromHint || 0)}
                   </span>
-                  <div className="flex items-baseline gap-1.5 mt-1">
-                    <span className="text-xs text-slate-400">Starting from</span>
-                    <span className="text-2xl font-black text-slate-900">
-                      {formatETB(listing.startingFromHint || 0)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Final pricing is customized through your scope review.
-                  </p>
                 </div>
-              ) : (
-                <div>
-                  <span className="text-xs text-slate-500 font-semibold block uppercase tracking-wider">
-                    Hourly Rental Rate
-                  </span>
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-3xl font-black text-slate-900">
-                      {formatETB(listing.hourlyRate || 0)}
-                    </span>
-                    <span className="text-sm font-semibold text-slate-500">/ hour</span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Clear breakdown preview */}
-            {!isService && (
-              <div className="space-y-2 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                <div className="flex justify-between">
-                  <span>Platform Commission (10%)</span>
-                  <span className="font-semibold text-slate-800">Included in checkout</span>
-                </div>
-                {isEquipment && listing.deposit > 0 && (
-                  <div className="flex justify-between pt-1 border-t border-slate-200/60 text-slate-700">
-                    <span>Security Deposit (Refundable)</span>
-                    <span className="font-bold text-slate-900">{formatETB(listing.deposit)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between pt-1 border-t border-slate-200/60 text-slate-500 italic">
-                  <span>Cancellation Policy</span>
-                  <span>Free up to 24h prior</span>
-                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Final pricing is customized through your scope review.
+                </p>
               </div>
-            )}
 
-            {/* Action CTA Button */}
-            <button
-              onClick={handleBookingAction}
-              className="w-full inline-flex items-center justify-center px-6 py-3.5 rounded-xl font-bold text-white text-base shadow-md transition-all hover:shadow-lg hover:opacity-95 min-h-[44px]"
-              style={{ backgroundColor: provider.brandColor || '#1E3A5F' }}
-            >
-              {isService ? 'Request Event Quote' : 'Book Time Slot'}
-            </button>
-
-            <p className="text-[11px] text-center text-slate-400">
-              Demo marketplace simulation • No actual payment collected
-            </p>
-          </div>
+              <button
+                onClick={handleBookingAction}
+                className="w-full inline-flex items-center justify-center px-6 py-3.5 rounded-xl font-bold text-white text-base shadow-md transition-all hover:shadow-lg hover:opacity-95 min-h-[44px]"
+                style={{ backgroundColor: provider.brandColor || '#1E3A5F' }}
+              >
+                Request Event Quote
+              </button>
+            </div>
+          ) : (
+            <BookingPanel listing={listing} provider={provider} />
+          )}
 
           {/* Provider Mini Profile Card */}
           <div className="bg-slate-50 rounded-2xl border border-slate-200 p-5 space-y-4">
