@@ -22,4 +22,7 @@ Each entry records a design decision with a one-line rationale.
 | 17 | Unified ListingForm component supporting studio, equipment, and service modes | Maximizes code reuse across creation and editing workflows while enforcing strict type validations |
 | 18 | Strict ownership checks at domain level returning `{ ok: false, error: 'Not yours' }` | Guarantees non-owners and suspended users cannot edit storefronts, listings, or portfolio assets even if URL is manipulated |
 | 19 | 14-day horizon strip with blackout indicators in owner calendar | Delivers instant visibility into upcoming rental activity, turnover cleanup buffers, and maintenance dates |
+| 20 | Versioned quote negotiation with previous quotes marked 'revised' | Preserves full audit history of quote modifications while allowing clear client acceptance of current terms |
+| 21 | One-review and one-owner-reply enforcement at domain level | Preserves review integrity and prevents reply spam or multiple ratings per completed transaction |
+| 22 | Administrator dispute mediation linking target record transitions | Guarantees transparent arbitration and advances contested bookings and productions directly into terminal resolved state |
 
