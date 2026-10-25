@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getPublicListings } from '@/lib/domain/listings';
@@ -14,12 +14,21 @@ export default function HomePage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('');
+  const [mounted, setMounted] = useState(false);
 
-  const { items: featuredListings } = getPublicListings({ pageSize: 6, sort: 'popularity' });
-  const providers = getPublicProviders();
+  // Storage is only available in the browser; reading it during the first render
+  // would make the client output differ from the server HTML (hydration error).
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const featuredListings = mounted
+    ? getPublicListings({ pageSize: 6, sort: 'popularity' }).items
+    : [];
+  const providers = mounted ? getPublicProviders() : [];
 
   // Read active announcements
-  const { data: announcements } = readStorage(STORAGE_KEYS.ANNOUNCEMENTS, []);
+  const announcements = mounted ? readStorage(STORAGE_KEYS.ANNOUNCEMENTS, []).data : [];
   const activeAnnouncement = announcements.find((a) => a.active);
 
   const handleHeroSearch = (e) => {

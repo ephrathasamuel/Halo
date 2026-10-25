@@ -10,20 +10,21 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "leaflet": "^1.9.4",
     "next": "^15.3.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "swr": "^2.3.3",
+    "react-leaflet": "^5.0.0",
     "recharts": "^2.15.3",
-    "leaflet": "^1.9.4",
-    "react-leaflet": "^5.0.0"
+    "swr": "^2.3.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.8",
-    "tailwindcss": "^4.1.8",
+    "@vitejs/plugin-react": "^4.5.2",
     "eslint": "^9.28.0",
     "eslint-config-next": "^15.3.3",
-    "vitest": "^3.2.1",
-    "@vitejs/plugin-react": "^4.5.2"
+    "jpeg-js": "^0.4.4",
+    "tailwindcss": "^4.1.8",
+    "vitest": "^3.2.1"
   }
 }
