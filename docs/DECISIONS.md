@@ -28,4 +28,7 @@ Each entry records a design decision with a one-line rationale.
 | 23 | Injected JSON-LD schemas (`LocalBusiness`, `Product`/`Place`) into server components | Maximizes search indexing visibility without violating the client storage boundary |
 | 24 | Applied `max-width: 100vw; overflow-x: hidden;` globally to `html, body` | Eliminates horizontal scrollbar glitches and guarantees full 360px mobile viewport compliance |
 | 25 | Documented bundle metrics, accessibility baseline, and code-splitting in `PERF.md` | Formalizes performance benchmarks and compliance with Hard Rule 8 and 1.2 stack conventions |
+| 26 | Created dedicated `__tests__/negative.test.js` validating all 10 matrix invariants | Explicitly satisfies Part 4.1 test matrix and verifies domain security guardrails |
+| 27 | Documented data schemas, RBAC auth mechanisms, and migration path in `DATA.md`, `AUTH.md`, `FUTURE.md` | Provides complete architectural transparency and honest disclosure of demo simulations |
+| 28 | Comprehensive `README.md` and `STRATEGY.md` with persona table and B Light flagship focus | Fulfills capstone presentation criteria and guides evaluator testing across all user roles |
 
