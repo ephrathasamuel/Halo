@@ -19,6 +19,7 @@ L.Icon.Default.mergeOptions({
  *   longitude: number,
  *   title: string,
  *   neighbourhood?: string,
+ *   city?: string,
  *   zoom?: number
  * }} props
  */
@@ -26,7 +27,8 @@ export default function StorefrontMapInner({
   latitude,
   longitude,
   title,
-  neighbourhood = 'Addis Ababa',
+  neighbourhood = '',
+  city = '',
   zoom = 15,
 }) {
   const containerRef = useRef(null);
@@ -54,7 +56,7 @@ export default function StorefrontMapInner({
     const popup = document.createElement('div');
     const name = document.createElement('strong');
     name.textContent = title;
-    popup.append(name, document.createElement('br'), `${neighbourhood}, Addis Ababa`);
+    popup.append(name, document.createElement('br'), `${neighbourhood}, ${city}`);
     marker.bindPopup(popup).openPopup();
 
     mapInstanceRef.current = map;
@@ -63,7 +65,7 @@ export default function StorefrontMapInner({
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, [latitude, longitude, title, neighbourhood, zoom]);
+  }, [latitude, longitude, title, neighbourhood, city, zoom]);
 
   return (
     <div

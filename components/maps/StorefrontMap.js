@@ -34,7 +34,7 @@ export function StorefrontMap({
   return (
     <div className={`space-y-3 ${className}`}>
       <div className="h-[260px] w-full relative">
-        <MapWithNoSSR latitude={safeLat} longitude={safeLng} title={title} neighbourhood={neighbourhood} />
+        <MapWithNoSSR latitude={safeLat} longitude={safeLng} title={title} neighbourhood={neighbourhood} city={city} />
       </div>
 
       {/* Text address for screen readers and when the map can't load */}

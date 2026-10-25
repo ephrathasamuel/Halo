@@ -35,7 +35,6 @@ export function ProviderLogo({ provider, size = 40, className = '', rounded = 'r
 
   if (hasLogo) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={provider.logo}
         alt={`${provider.name} logo`}
@@ -71,7 +70,6 @@ export function UserAvatar({ user, size = 36, className = '' }) {
   const box = { width: size, height: size };
   if (user?.avatar && !broken) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={user.avatar}
         alt=""

@@ -56,6 +56,7 @@ export function StudioStorefrontClient({ slug }) {
   const studios = providerListings.filter((l) => l.type === 'studio');
   const equipment = providerListings.filter((l) => l.type === 'equipment');
   const services = providerListings.filter((l) => l.type === 'service');
+  const forSale = providerListings.filter((l) => l.type === 'sale');
 
   const averageRating =
     reviews.length > 0
@@ -85,9 +86,9 @@ export function StudioStorefrontClient({ slug }) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Identity and contact */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 -mt-10 sm:-mt-12">
+        <div className="relative flex flex-col lg:flex-row lg:items-end justify-between gap-6 mt-4">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-            <span className="relative shrink-0 rounded-2xl border-4 border-halo-bg shadow-sm">
+            <span className="relative shrink-0 self-start -mt-14 sm:-mt-16 rounded-2xl border-4 border-halo-bg shadow-sm">
               <ProviderLogo provider={provider} size={88} rounded="rounded-xl" />
             </span>
             <div className="pb-1">
@@ -167,6 +168,7 @@ export function StudioStorefrontClient({ slug }) {
           <ListingSection id="studios-heading" title="Studios" listings={studios} />
           <ListingSection id="equipment-heading" title="Equipment" listings={equipment} />
           <ListingSection id="services-heading" title="Event filming" listings={services} />
+          <ListingSection id="sale-heading" title="For sale" listings={forSale} />
 
           {portfolioItems.length > 0 && (
             <section aria-labelledby="portfolio-heading">

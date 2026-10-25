@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { ClipboardList, Clapperboard, LayoutDashboard, UserRound } from 'lucide-react';
+import { ClipboardList, Clapperboard, LayoutDashboard, ShoppingBag, UserRound } from 'lucide-react';
 import { Header } from '@/components/ui/Header';
 import { Footer } from '@/components/ui/Footer';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
@@ -10,6 +10,7 @@ const customerLinks = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard, exact: true },
   { href: '/bookings', label: 'Bookings', icon: ClipboardList },
   { href: '/events', label: 'Event quotes', icon: Clapperboard },
+  { href: '/purchases', label: 'Purchases', icon: ShoppingBag },
   { href: '/account', label: 'Profile', icon: UserRound },
 ];
 

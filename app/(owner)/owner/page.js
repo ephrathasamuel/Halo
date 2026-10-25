@@ -125,7 +125,7 @@ export default function OwnerOverviewPage() {
         ) : (
           <ul className="divide-y divide-halo-border border-t border-halo-border">
             {pendingRequests.map((b) => {
-              const renter = userMap.get(b.renterId);
+              const renter = (b.guest || userMap.get(b.renterId));
               return (
                 <li key={b.id} className="px-5 py-4 sm:px-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="min-w-0">
@@ -178,7 +178,7 @@ export default function OwnerOverviewPage() {
                     {formatDate(b.date)}, {formatTime(b.startTime)}
                   </p>
                   <p className="text-sm text-halo-text-muted truncate">
-                    {userMap.get(b.renterId)?.name || 'Renter'}, {b.hours} hours
+                    {(b.guest || userMap.get(b.renterId))?.name || 'Renter'}, {b.hours} hours
                   </p>
                 </div>
                 <StatusBadge status={b.status} />

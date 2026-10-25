@@ -364,7 +364,7 @@ export function ListingForm({ initialListing = null }) {
               <datalist id="l-sale-cond">{CONDITIONS.sale.map((c) => <option key={c} value={c} />)}</datalist>
             </Field>
             <label className="flex items-center gap-3 self-end min-h-[44px] cursor-pointer">
-              <input type="checkbox" checked={form.negotiable} onChange={(e) => set('negotiable')(e.target.checked)} className="h-5 w-5 accent-[var(--halo-ink)]" />
+              <input type="checkbox" checked={form.negotiable} onChange={(e) => set('negotiable')(e.target.checked)} className="h-5 w-5 min-h-0 min-w-0 shrink-0 accent-[var(--halo-ink)]" />
               <span className="text-[15px] text-halo-ink">Price is negotiable</span>
             </label>
           </div>
@@ -374,7 +374,7 @@ export function ListingForm({ initialListing = null }) {
       {/* 5. Availability and save */}
       <section className="rounded-2xl border border-halo-border bg-halo-surface p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <label className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" checked={form.available} onChange={(e) => set('available')(e.target.checked)} className="mt-1 h-5 w-5 accent-[var(--halo-ink)]" />
+          <input type="checkbox" checked={form.available} onChange={(e) => set('available')(e.target.checked)} className="mt-1 h-5 w-5 min-h-0 min-w-0 shrink-0 accent-[var(--halo-ink)]" />
           <span>
             <span className="block font-medium text-halo-ink">Available now</span>
             <span className="block text-[13px] text-halo-text-muted">

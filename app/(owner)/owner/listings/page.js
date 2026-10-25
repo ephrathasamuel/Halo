@@ -2,211 +2,159 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { CalendarDays, Eye, Pencil, Plus } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { formatMoney } from '@/lib/format';
+import { formatPrice, LISTING_TYPE_LABELS } from '@/lib/format';
 import { deactivateListing } from '@/lib/domain/listings';
-import { EmptyState } from '@/components/states/EmptyState';
-import { STATUS_TONES, statusLabel } from '@/lib/status';
 import { currencyOfProvider } from '@/lib/domain/providers';
+import { EmptyState } from '@/components/states/EmptyState';
+import { SafeImage } from '@/components/ui/SafeImage';
+import { Notice, PageHeader, StatusBadge, btn } from '@/components/dashboard/DashboardUI';
 
-const STATUS_BADGES = STATUS_TONES;
+const TABS = [
+  { id: 'all', label: 'All' },
+  { id: 'studio', label: 'Spaces' },
+  { id: 'equipment', label: 'Equipment' },
+  { id: 'service', label: 'Services' },
+  { id: 'sale', label: 'For sale' },
+];
+
+/** Price line for any listing type. */
+function priceLine(item) {
+  const currency = currencyOfProvider(item.providerId);
+  if (item.type === 'service') return `From ${formatPrice(item.startingFromHint || 0, currency)}`;
+  if (item.type === 'sale') return formatPrice(item.salePrice || 0, currency);
+  return `${formatPrice(item.hourlyRate || 0, currency)} per hour`;
+}
 
 export default function OwnerListingsPage() {
   const { session } = useSession();
   const { data: listings, refresh } = useStorageSync(STORAGE_KEYS.LISTINGS, []);
   const myListings = listings.filter((l) => l.ownerId === session?.userId);
 
-  const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'studio' | 'equipment' | 'service'
-  const [feedback, setFeedback] = useState({ type: '', text: '' });
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [notice, setNotice] = useState(null);
 
-  const filtered = typeFilter === 'all'
-    ? myListings
-    : myListings.filter((l) => l.type === typeFilter);
+  const filtered = typeFilter === 'all' ? myListings : myListings.filter((l) => l.type === typeFilter);
 
-  const handleToggleActive = (listingId) => {
-    setFeedback({ type: '', text: '' });
-    const res = deactivateListing(listingId);
+  const toggleAvailable = (item) => {
+    const res = deactivateListing(item.id);
     if (!res.ok) {
-      setFeedback({ type: 'error', text: res.error || 'Failed to toggle status' });
+      setNotice({ tone: 'error', text: res.error || 'That change could not be saved' });
       return;
     }
-    setFeedback({
-      type: 'success',
-      text: `Listing is now ${res.data.status === 'approved' ? 'Active & Published' : 'Inactive'}!`,
+    setNotice({
+      tone: 'success',
+      text: res.data.status === 'approved' ? `${item.title} is available again.` : `${item.title} is now unavailable and hidden from search.`,
     });
     refresh();
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-halo-border">
-        <div>
-          <h1 className="text-2xl font-semibold text-halo-ink">Studio & Equipment Listings</h1>
-          <p className="text-xs text-halo-text-muted mt-1">
-            Manage your rental assets, rates, availability windows, and service packages.
-          </p>
-        </div>
+      <PageHeader
+        title="Listings"
+        description="Spaces, equipment, services and items for sale. Switch anything off when it's not available."
+        actions={
+          <Link href="/owner/listings/new" className={btn.primary}>
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            New listing
+          </Link>
+        }
+      />
 
-        <Link
-          href="/owner/listings/new"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-halo-ink text-white rounded-xl text-xs font-semibold hover:bg-halo-ink-soft transition min-h-[44px]"
-        >
-          Create New Listing
-        </Link>
-      </div>
-
-      {feedback.text && (
-        <div
-          className={`p-4 rounded-xl text-sm font-medium border ${
-            feedback.type === 'error'
-            ? 'bg-red-50 text-red-700 border-red-200'
-            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-          }`}
-        >
-          {feedback.text}
-        </div>
+      {notice && (
+        <Notice tone={notice.tone} onDismiss={() => setNotice(null)}>
+          {notice.text}
+        </Notice>
       )}
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-halo-border pb-2 overflow-x-auto">
-        {[
-          { id: 'all', label: `All Listings (${myListings.length})` },
-          { id: 'studio', label: `Studios (${myListings.filter((l) => l.type === 'studio').length})` },
-          { id: 'equipment', label: `Equipment (${myListings.filter((l) => l.type === 'equipment').length})` },
-          { id: 'service', label: `Services (${myListings.filter((l) => l.type === 'service').length})` },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setTypeFilter(tab.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap min-h-[44px] ${
-              typeFilter === tab.id
-              ? 'bg-stone-900 text-white'
-              : 'text-stone-600 hover:bg-stone-100'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar" role="group" aria-label="Filter by type">
+        {TABS.map((tab) => {
+          const count = tab.id === 'all' ? myListings.length : myListings.filter((l) => l.type === tab.id).length;
+          const on = typeFilter === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setTypeFilter(tab.id)}
+              aria-pressed={on}
+              className={`shrink-0 px-4 rounded-full text-sm font-medium border min-h-[40px] ${
+                on ? 'bg-halo-ink border-halo-ink text-white' : 'bg-halo-surface border-halo-border-strong text-halo-ink hover:border-halo-ink'
+              }`}
+            >
+              {tab.label} <span className="tabular opacity-70">{count}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Listings Table / Cards */}
       {filtered.length === 0 ? (
-        <EmptyState
-          title="No listings in this category"
-          message="Click Create New Listing to publish a studio room, camera kit, or filming package."
-        />
+        <EmptyState title="Nothing here yet" message="Add a space, a piece of equipment, a service, or something you want to sell.">
+          <Link href="/owner/listings/new" className={btn.primary}>
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            New listing
+          </Link>
+        </EmptyState>
       ) : (
-        <div className="bg-white rounded-2xl border border-halo-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-stone-700">
-              <thead className="bg-stone-50 text-xs font-semibold text-halo-text-muted border-b border-halo-border">
-                <tr>
-                  <th scope="col" className="px-6 py-4">Listing Title</th>
-                  <th scope="col" className="px-6 py-4">Type</th>
-                  <th scope="col" className="px-6 py-4">Rate / Pricing</th>
-                  <th scope="col" className="px-6 py-4">Status</th>
-                  <th scope="col" className="px-6 py-4">Specs</th>
-                  <th scope="col" className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-halo-border">
-                {filtered.map((item) => (
-                  <tr key={item.id} className="hover:bg-stone-50/80 transition">
-                    <td className="px-6 py-4">
-                      <div className="space-y-0.5">
-                        <Link
-                          href={`/listings/${item.id}`}
-                          className="font-semibold text-halo-ink hover:text-halo-ink hover:underline text-sm"
-                        >
-                          {item.title}
-                        </Link>
-                        <p className="text-xs text-halo-text-muted line-clamp-1 max-w-xs">
-                          {item.description}
-                        </p>
-                      </div>
-                    </td>
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((item) => {
+            const available = item.status === 'approved';
+            const canToggle = ['approved', 'inactive'].includes(item.status);
+            return (
+              <li key={item.id} className="flex flex-col overflow-hidden rounded-2xl border border-halo-border bg-halo-surface">
+                <div className="relative aspect-[16/10] bg-halo-placeholder">
+                  <SafeImage src={item.photos?.[0]} alt="" fallbackType={item.type} fill className={`object-cover ${available ? '' : 'opacity-50 grayscale'}`} />
+                  <span className="absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-halo-ink">
+                    {LISTING_TYPE_LABELS[item.type] || item.type}
+                  </span>
+                </div>
+                <div className="flex flex-1 flex-col p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="font-semibold text-halo-ink line-clamp-1">{item.title}</h2>
+                    {!canToggle && <StatusBadge status={item.status} />}
+                  </div>
+                  <p className="mt-0.5 text-[15px] text-halo-ink tabular">{priceLine(item)}</p>
+                  {item.category && <p className="text-sm text-halo-text-muted">{item.category}</p>}
 
-                    <td className="px-6 py-4">
-                      <span className="capitalize text-xs font-semibold px-2 py-0.5 rounded-lg bg-stone-100 text-stone-700">
-                        {item.type}
-                      </span>
-                    </td>
+                  {canToggle && (
+                    <label className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-halo-ink/[0.04] px-3 min-h-[44px] cursor-pointer">
+                      <span className="text-sm font-medium text-halo-ink">{available ? 'Available' : 'Unavailable'}</span>
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={available}
+                        onChange={() => toggleAvailable(item)}
+                        aria-label={`${item.title} available`}
+                        className="h-5 w-9 min-h-0 min-w-0 shrink-0 cursor-pointer appearance-none rounded-full bg-halo-border-strong transition-colors checked:bg-halo-success relative before:absolute before:left-0.5 before:top-0.5 before:h-4 before:w-4 before:rounded-full before:bg-white before:transition-transform checked:before:translate-x-4"
+                      />
+                    </label>
+                  )}
 
-                    <td className="px-6 py-4 font-semibold text-halo-ink">
-                      {item.type === 'service' ? (
-                        <span className="text-xs text-stone-600">
-                          From {formatMoney(item.startingFromHint, currencyOfProvider(item.providerId))} (Quote)
-                        </span>
-                      ) : (
-                        <span>{formatMoney(item.hourlyRate, currencyOfProvider(item.providerId))} / hour</span>
-                      )}
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                          STATUS_BADGES[item.status] || 'bg-stone-100 text-stone-700'
-                        }`}
-                      >
-                        {statusLabel(item.status)}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4 text-xs text-halo-text-muted">
-                      {item.type === 'studio' && (
-                        <span>
-                          {item.capacity} pers, Min {item.minHours}h, {item.bufferMinutes}m buffer
-                        </span>
-                      )}
-                      {item.type === 'equipment' && (
-                        <span>
-                          Qty: {item.quantity}, Deposit: {formatMoney(item.deposit, currencyOfProvider(item.providerId))}, {item.condition}
-                        </span>
-                      )}
-                      {item.type === 'service' && (
-                        <span>{item.eventTypes?.slice(0, 2).join(', ')}...</span>
-                      )}
-                    </td>
-
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {item.type === 'studio' && (
-                          <Link
-                            href={`/owner/listings/${item.id}/availability`}
-                            className="px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 rounded-lg transition min-h-[44px] flex items-center"
-                          >
-                            Availability
-                          </Link>
-                        )}
-
-                        <Link
-                          href={`/owner/listings/${item.id}/edit`}
-                          className="px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 rounded-lg transition min-h-[44px] flex items-center"
-                        >
-                          Edit
-                        </Link>
-
-                        <button
-                          onClick={() => handleToggleActive(item.id)}
-                          className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg transition min-h-[44px] ${
-                            item.status === 'approved'
-                            ? 'text-amber-700 hover:bg-amber-50'
-                            : 'text-emerald-700 hover:bg-emerald-50'
-                          }`}
-                        >
-                          {item.status === 'approved' ? 'Pause' : 'Activate'}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                  <div className="mt-3 flex flex-wrap gap-2 pt-1">
+                    <Link href={`/owner/listings/${item.id}/edit`} className={btn.secondary}>
+                      <Pencil className="h-4 w-4" aria-hidden="true" />
+                      Edit
+                    </Link>
+                    {item.type === 'studio' && (
+                      <Link href={`/owner/listings/${item.id}/availability`} className={btn.secondary}>
+                        <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                        Blocked dates
+                      </Link>
+                    )}
+                    {available && (
+                      <Link href={`/listings/${item.id}`} className={btn.secondary}>
+                        <Eye className="h-4 w-4" aria-hidden="true" />
+                        View
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

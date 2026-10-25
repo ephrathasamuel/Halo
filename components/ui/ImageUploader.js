@@ -69,7 +69,6 @@ export function ImageUploader({ value = [], onChange, max = 8, kind = 'photo', l
       <div className={`mt-2 grid gap-3 ${single ? 'grid-cols-1 max-w-[220px]' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'}`}>
         {value.map((src, i) => (
           <figure key={`${src.slice(0, 40)}-${i}`} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-halo-border bg-halo-placeholder">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
             {!single && i === 0 && (
               <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[11px] font-medium text-white">

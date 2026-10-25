@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getPublicListings, getListingById } from '@/lib/domain/listings';
+import { getPublicListings, listingPrice, getListingById } from '@/lib/domain/listings';
 import { getPublicProviders, getProviderBySlug } from '@/lib/domain/providers';
 import { writeStorage } from '@/lib/storage/writeStorage';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
@@ -98,15 +98,15 @@ describe('Search, Filters, Sort, and Pagination', () => {
   it('sorts by price ascending and descending', () => {
     const asc = getPublicListings({ sort: 'price_asc', pageSize: 50 });
     for (let i = 0; i < asc.items.length - 1; i++) {
-      const priceA = asc.items[i].type === 'service' ? asc.items[i].startingFromHint : asc.items[i].hourlyRate;
-      const priceB = asc.items[i + 1].type === 'service' ? asc.items[i + 1].startingFromHint : asc.items[i + 1].hourlyRate;
+      const priceA = listingPrice(asc.items[i]);
+      const priceB = listingPrice(asc.items[i + 1]);
       expect(priceA).toBeLessThanOrEqual(priceB);
     }
 
     const desc = getPublicListings({ sort: 'price_desc', pageSize: 50 });
     for (let i = 0; i < desc.items.length - 1; i++) {
-      const priceA = desc.items[i].type === 'service' ? desc.items[i].startingFromHint : desc.items[i].hourlyRate;
-      const priceB = desc.items[i + 1].type === 'service' ? desc.items[i + 1].startingFromHint : desc.items[i + 1].hourlyRate;
+      const priceA = listingPrice(desc.items[i]);
+      const priceB = listingPrice(desc.items[i + 1]);
       expect(priceA).toBeGreaterThanOrEqual(priceB);
     }
   });

@@ -157,7 +157,7 @@ export default function OwnerCalendarPage() {
         ) : (
           <div className="space-y-4">
             {dayBookings.map((b) => {
-              const renter = userMap.get(b.renterId);
+              const renter = (b.guest || userMap.get(b.renterId));
               return (
                 <div
                   key={b.id}

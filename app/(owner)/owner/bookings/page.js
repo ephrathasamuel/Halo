@@ -10,6 +10,9 @@ import { transitionBooking } from '@/lib/domain/bookings';
 import { EmptyState } from '@/components/states/EmptyState';
 import { STATUS_TONES, statusLabel } from '@/lib/status';
 import { currencyOfProvider, currencyOfCurrentOwner } from '@/lib/domain/providers';
+import { Plus } from 'lucide-react';
+import { Panel, btn } from '@/components/dashboard/DashboardUI';
+import { RecordBookingForm } from '@/components/owner/RecordBookingForm';
 
 const STATUS_BADGES = STATUS_TONES;
 
@@ -17,6 +20,10 @@ export default function OwnerBookingsPage() {
   const { session } = useSession();
   const { data: bookings, refresh } = useStorageSync(STORAGE_KEYS.BOOKINGS, []);
   const { data: users } = useStorageSync(STORAGE_KEYS.USERS, []);
+  const { data: listings } = useStorageSync(STORAGE_KEYS.LISTINGS, []);
+  const { data: providers } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
+  const myProvider = providers.find((p) => p.ownerId === session?.userId);
+  const [recording, setRecording] = useState(false);
 
   const myBookings = bookings.filter((b) => b.ownerId === session?.userId);
   const userMap = new Map(users.map((u) => [u.id, u]));
@@ -56,13 +63,31 @@ export default function OwnerBookingsPage() {
           </p>
         </div>
 
-        <Link
-          href="/owner/calendar"
-          className="inline-flex items-center gap-1.5 px-4 py-2 border border-halo-border-strong rounded-xl text-xs font-semibold text-stone-700 bg-white hover:bg-stone-50 transition min-h-[44px]"
-        >
-          Open Calendar View
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/owner/calendar" className={btn.secondary}>
+            Calendar
+          </Link>
+          <button type="button" onClick={() => setRecording(true)} className={btn.primary}>
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Record a booking
+          </button>
+        </div>
       </div>
+
+      {recording && myProvider && (
+        <Panel title="Record a booking" description="For walk-ins and bookings taken by phone. It blocks the time like an online booking.">
+          <RecordBookingForm
+            listings={listings.filter((l) => l.ownerId === session?.userId)}
+            provider={myProvider}
+            onCancel={() => setRecording(false)}
+            onDone={(b) => {
+              setRecording(false);
+              setFeedback({ type: 'success', text: `Booking saved for ${b.guest.name}.` });
+              refresh();
+            }}
+          />
+        </Panel>
+      )}
 
       {feedback.text && (
         <div
@@ -109,7 +134,8 @@ export default function OwnerBookingsPage() {
       ) : (
         <div className="space-y-4">
           {filtered.map((b) => {
-            const renter = userMap.get(b.renterId);
+            // Bookings the owner recorded carry the customer's details themselves
+            const renter = b.guest ? { name: b.guest.name, phone: b.guest.phone } : userMap.get(b.renterId);
             return (
               <div
                 key={b.id}
@@ -153,7 +179,13 @@ export default function OwnerBookingsPage() {
                   {/* Renter Contact */}
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-halo-text-muted">Renter Information</p>
-                    <p className="text-sm font-semibold text-halo-ink">{renter?.name || 'Unknown Renter'}</p>
+                    <p className="text-sm font-semibold text-halo-ink">
+                      {renter?.name || 'Unknown renter'}
+                      {b.source === 'owner' && (
+                        <span className="ml-2 rounded-full bg-halo-ink/[0.06] px-2 py-0.5 text-[11px] font-medium text-halo-text-muted">Recorded by you</span>
+                      )}
+                    </p>
+                    {b.note && <p className="text-xs text-halo-text-muted">{b.note}</p>}
                     <p className="text-xs text-stone-600">{renter?.phone || 'No phone provided'}</p>
                     <p className="text-xs text-halo-text-muted">{renter?.email}</p>
                   </div>

@@ -15,7 +15,8 @@ const SCRIPT_H =
   'M14 29.2C16.2 22.6 19.6 14.6 20.7 10.2C21.4 6.9 17.9 5.9 17 9C16.2 12.4 16.2 21.2 15.8 29.2C17.2 24.3 19.7 21 22.4 21C24.6 21 25.1 22.9 24.4 25.3C23.8 27.4 24.4 29.6 27.4 28.1';
 
 /* Greetings the wordmark cycles through on hover or touch */
-const GREETINGS = ['Hello', 'ሰላም', 'Jambo', 'Marhaba', 'Bonjour', 'Hola'];
+// Each in its own script: English, Amharic, Swahili, Arabic, Hebrew, French, Spanish
+const GREETINGS = ['Hello', 'ሰላም', 'Jambo', 'مرحبا', 'שלום', 'Bonjour', 'Hola'];
 const GREETING_MS = 900;
 
 /**
@@ -69,8 +70,9 @@ export function Logo({ className = '', tone = 'dark', markOnly = false, animated
           </span>
           <span
             key={greetingText || 'none'}
+            dir="auto"
             aria-hidden="true"
-            className={`col-start-1 row-start-1 whitespace-nowrap tracking-[0.02em] text-halo-gold-ink transition-opacity duration-200 ${
+            className={`col-start-1 row-start-1 text-left whitespace-nowrap tracking-[0.02em] text-halo-gold-ink transition-opacity duration-200 ${
               greetingText ? 'opacity-100 animate-[halo-greet_0.35s_ease-out]' : 'opacity-0'
             }`}
           >

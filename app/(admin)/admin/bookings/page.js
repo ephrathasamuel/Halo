@@ -67,7 +67,7 @@ export default function AdminBookingsPage() {
             <tbody className="divide-y divide-halo-border">
               {filtered.map((b) => {
                 const provider = providerMap.get(b.providerId);
-                const renter = userMap.get(b.renterId);
+                const renter = (b.guest || userMap.get(b.renterId));
 
                 return (
                   <tr key={b.id} className="hover:bg-stone-50 transition">
