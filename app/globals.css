@@ -1,0 +1,62 @@
+@import 'tailwindcss';
+
+:root {
+  --brand-color: #D4AF37;
+  --brand-color-light: #E8D48B;
+  --brand-color-dark: #B8941F;
+  --halo-primary: #1E3A5F;
+  --halo-primary-light: #2D5F8A;
+  --halo-secondary: #D4AF37;
+  --halo-accent: #E8D48B;
+  --halo-bg: #FAFAFA;
+  --halo-surface: #FFFFFF;
+  --halo-text: #1A1A2E;
+  --halo-text-muted: #64748B;
+  --halo-border: #E2E8F0;
+  --halo-success: #22C55E;
+  --halo-warning: #F59E0B;
+  --halo-error: #EF4444;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+@theme {
+  --color-brand: var(--brand-color);
+  --color-brand-light: var(--brand-color-light);
+  --color-brand-dark: var(--brand-color-dark);
+  --color-halo-primary: var(--halo-primary);
+  --color-halo-primary-light: var(--halo-primary-light);
+  --color-halo-secondary: var(--halo-secondary);
+  --color-halo-accent: var(--halo-accent);
+  --color-halo-bg: var(--halo-bg);
+  --color-halo-surface: var(--halo-surface);
+  --color-halo-text: var(--halo-text);
+  --color-halo-text-muted: var(--halo-text-muted);
+  --color-halo-border: var(--halo-border);
+  --color-halo-success: var(--halo-success);
+  --color-halo-warning: var(--halo-warning);
+  --color-halo-error: var(--halo-error);
+}
+
+body {
+  background-color: var(--halo-bg);
+  color: var(--halo-text);
+}
+
+/* Focus ring styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--halo-primary);
+  outline-offset: 2px;
+}
+
+/* Ensure minimum touch target size */
+button, a, [role="button"], input[type="checkbox"], input[type="radio"], select {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="date"], input[type="time"], textarea, select {
+  min-height: 44px;
+}

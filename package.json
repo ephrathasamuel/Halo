@@ -1,0 +1,29 @@
+{
+  "name": "halo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint app lib components hooks",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "next": "^15.3.3",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "swr": "^2.3.3",
+    "recharts": "^2.15.3",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^5.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.8",
+    "tailwindcss": "^4.1.8",
+    "eslint": "^9.28.0",
+    "eslint-config-next": "^15.3.3",
+    "vitest": "^3.2.1",
+    "@vitejs/plugin-react": "^4.5.2"
+  }
+}
