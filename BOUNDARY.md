@@ -17,7 +17,9 @@ Halo uses `localStorage` and `sessionStorage` for all persistence. These APIs ar
 | `app/not-found.js` | Static error page. |
 | `app/sitemap.js` | Generates sitemap from hardcoded slugs (cannot read localStorage on server). |
 | `app/robots.js` | Static robots config. |
-| Placeholder pages (Phase 2+) | Static placeholders until built as client components. |
+| `app/(public)/studios/[slug]/page.js` | Server component exporting generateMetadata; renders StudioStorefrontClient. |
+| `app/(public)/listings/[id]/page.js` | Server component exporting generateMetadata; renders ListingDetailClient. |
+| Placeholder pages (Phase 3+) | Static placeholders until built as client components. |
 
 ## Client Components (used for)
 
@@ -27,8 +29,13 @@ Halo uses `localStorage` and `sessionStorage` for all persistence. These APIs ar
 | `components/ui/DemoDataBadge.js` | Renders in browser only. |
 | `components/ui/Header.js` | Reads session via `useSession()` hook. |
 | `components/ui/RequireRole.js` | Reads session, redirects based on auth state. |
-| `app/(public)/studios/[slug]/layout.js` | Reads provider data from storage to apply brand colour. |
-| `app/(public)/studios/[slug]/page.js` | Reads listings, portfolio, reviews from storage. |
+| `components/studios/StudioStorefrontClient.js` | Reads provider, listings, reviews, and portfolio from storage. |
+| `components/listings/ListingDetailClient.js` | Reads listing and provider from storage. |
+| `components/maps/StorefrontMap.js` | Dynamically imports Leaflet client-only with ssr: false. |
+| `app/(public)/studios/[slug]/layout.js` | Reads provider data from storage to apply brand colour CSS variable. |
+| `app/(public)/browse/page.js` | Reads listings from storage, handles URL filter state and pagination. |
+| `app/(public)/studios/page.js` | Reads provider directory from storage. |
+| `app/(public)/studios/[slug]/portfolio/page.js` | Reads portfolio from storage and filters by eventType. |
 | `app/(owner)/owner/layout.js` | Requires owner role, reads session. |
 | `app/(admin)/admin/layout.js` | Requires admin role, reads session. |
 | All hooks (`useSession`, `useStorageSync`, etc.) | Read browser storage APIs. |

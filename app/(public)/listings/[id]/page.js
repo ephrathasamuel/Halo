@@ -1,11 +1,38 @@
+import { ListingDetailClient } from '@/components/listings/ListingDetailClient';
+import { seedListings, seedProviders } from '@/lib/storage/seed';
+
 /**
- * Listing detail page placeholder.
+ * Server metadata generator for listing details.
+ * @param {{ params: Promise<{ id: string }> }} props
  */
-export default function ListingDetailPage() {
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold mb-6">Listing Detail</h1>
-      <p className="text-halo-text-muted">Listing detail page coming in Phase 2.</p>
-    </div>
-  );
+export async function generateMetadata({ params }) {
+  const { id } = await params;
+  const listing = seedListings.find((l) => l.id === id);
+  const provider = listing ? seedProviders.find((p) => p.id === listing.providerId) : null;
+
+  if (!listing) {
+    return {
+      title: 'Listing Not Found | Halo',
+      description: 'The requested listing is not available.',
+    };
+  }
+
+  return {
+    title: `${listing.title} | ${provider ? provider.name : 'Halo Marketplace'}`,
+    description: listing.description?.slice(0, 160),
+    openGraph: {
+      title: `${listing.title} — ${provider?.name || 'Halo'}`,
+      description: listing.description?.slice(0, 160),
+      images: [listing.photos?.[0] || '/images/listings/b-light-studio-1.jpg'],
+    },
+  };
+}
+
+/**
+ * Listing Detail Server Page.
+ * @param {{ params: Promise<{ id: string }> }} props
+ */
+export default async function ListingDetailPage({ params }) {
+  const { id } = await params;
+  return <ListingDetailClient id={id} />;
 }

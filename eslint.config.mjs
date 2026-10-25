@@ -1,25 +1,36 @@
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { FlatCompat } from '@eslint/eslintrc';
+import reactPlugin from 'eslint-plugin-react';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
+export default [
   {
-    ignores: ['node_modules/**', '.next/**', 'out/**', 'build/**', '.vercel/**'],
+    ignores: [
+      'node_modules/**',
+      '.next/**',
+      'out/**',
+      'build/**',
+      '.vercel/**',
+      'public/**',
+      'docs/**',
+    ],
   },
-  ...compat.extends('next/core-web-vitals'),
   {
+    files: ['**/*.js', '**/*.jsx', '**/*.mjs'],
+    plugins: {
+      react: reactPlugin,
+    },
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
     rules: {
+      'react/jsx-uses-vars': 'error',
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-      '@next/next/no-html-link-for-pages': 'off',
+      'no-undef': 'off',
+      'no-console': 'off',
     },
   },
 ];
-
-export default eslintConfig;
