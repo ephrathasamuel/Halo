@@ -1,4 +1,4 @@
-# Halo — Creative Space & Equipment Marketplace | Addis Ababa
+# Halo: Creative Space & Equipment Marketplace | Addis Ababa
 
 Halo is a multi-tenant creative marketplace for studio rental, equipment hire, and event/wedding filming in Addis Ababa, Ethiopia. Built as a frontend-only capstone for the **IBT-QIYAS Full-Stack Software Development Program**.
 
@@ -6,7 +6,7 @@ Halo hosts independent provider storefronts with custom brand identities. **B Li
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # 1. Install dependencies
@@ -28,7 +28,7 @@ npm run build
 
 ---
 
-## 🎭 Pre-Seeded Demo Personas
+## Pre-Seeded Demo Personas
 
 Halo runs without an external database or backend server. All demo data is seeded automatically into `localStorage` on first load. You can switch between personas with 1-click on the `/signin` page or by using their demo emails:
 
@@ -43,7 +43,7 @@ Halo runs without an external database or backend server. All demo data is seede
 
 ---
 
-## ✨ Core Product Features
+## Core Product Features
 
 ### 1. Flagship Provider: B Light (`/studios/b-light`)
 - **Independent Identity inside Halo**: Custom gold accent branding (`#D4AF37`), hero banner, opening hours, contact badges (Direct Phone, WhatsApp, Telegram), and neighbourhood coordinates.
@@ -86,7 +86,7 @@ Halo runs without an external database or backend server. All demo data is seede
 
 ---
 
-## 🛡️ Architectural Hard Rules & Disclaimers
+## Architectural Hard Rules & Disclaimers
 
 1. **No Database & No Backend**: State is persisted purely in client `localStorage` (`halo_*_v1`) and `sessionStorage` (`halo_session_v1`, `halo_checkout_draft_v1`).
 2. **Safe Storage**: Reads go through `readStorage(key, fallback)` which never throws and auto-recovers from corrupted JSON.
@@ -96,7 +96,7 @@ Halo runs without an external database or backend server. All demo data is seede
 
 ---
 
-## 🧪 Verification & Test Suite
+## Verification & Test Suite
 
 The project includes an extensive automated test suite run via **Vitest**:
 
