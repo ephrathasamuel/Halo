@@ -5,16 +5,13 @@ import Link from 'next/link';
 import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { formatETB } from '@/lib/format';
+import { formatMoney } from '@/lib/format';
 import { deactivateListing } from '@/lib/domain/listings';
 import { EmptyState } from '@/components/states/EmptyState';
+import { STATUS_TONES, statusLabel } from '@/lib/status';
+import { currencyOfProvider } from '@/lib/domain/providers';
 
-const STATUS_BADGES = {
-  approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  inactive: 'bg-slate-100 text-slate-600 border-slate-200',
-  rejected: 'bg-rose-50 text-rose-700 border-rose-200',
-};
+const STATUS_BADGES = STATUS_TONES;
 
 export default function OwnerListingsPage() {
   const { session } = useSession();
@@ -45,37 +42,36 @@ export default function OwnerListingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-halo-border">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Studio & Equipment Listings</h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <h1 className="text-2xl font-semibold text-halo-ink">Studio & Equipment Listings</h1>
+          <p className="text-xs text-halo-text-muted mt-1">
             Manage your rental assets, rates, availability windows, and service packages.
           </p>
         </div>
 
         <Link
           href="/owner/listings/new"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-halo-primary text-white rounded-xl text-xs font-bold hover:bg-halo-primary-light transition shadow min-h-[44px]"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-halo-ink text-white rounded-xl text-xs font-semibold hover:bg-halo-ink-soft transition min-h-[44px]"
         >
-          <span>➕</span> Create New Listing
+          Create New Listing
         </Link>
       </div>
 
       {feedback.text && (
         <div
-          className={`p-4 rounded-xl text-sm font-medium border shadow-sm ${
+          className={`p-4 rounded-xl text-sm font-medium border ${
             feedback.type === 'error'
-              ? 'bg-red-50 text-red-700 border-red-200'
-              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
           }`}
         >
-          {feedback.type === 'error' ? '⚠️ ' : '✓ '}
           {feedback.text}
         </div>
       )}
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-halo-border pb-2 overflow-x-auto">
         {[
           { id: 'all', label: `All Listings (${myListings.length})` },
           { id: 'studio', label: `Studios (${myListings.filter((l) => l.type === 'studio').length})` },
@@ -85,10 +81,10 @@ export default function OwnerListingsPage() {
           <button
             key={tab.id}
             onClick={() => setTypeFilter(tab.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap min-h-[44px] ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap min-h-[44px] ${
               typeFilter === tab.id
-                ? 'bg-slate-900 text-white shadow'
-                : 'text-slate-600 hover:bg-slate-100'
+              ? 'bg-stone-900 text-white'
+              : 'text-stone-600 hover:bg-stone-100'
             }`}
           >
             {tab.label}
@@ -101,13 +97,12 @@ export default function OwnerListingsPage() {
         <EmptyState
           title="No listings in this category"
           message="Click Create New Listing to publish a studio room, camera kit, or filming package."
-          icon="📦"
         />
       ) : (
-        <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-2xl border border-halo-border overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
+            <table className="w-full text-left text-sm text-stone-700">
+              <thead className="bg-stone-50 text-xs font-semibold text-halo-text-muted border-b border-halo-border">
                 <tr>
                   <th scope="col" className="px-6 py-4">Listing Title</th>
                   <th scope="col" className="px-6 py-4">Type</th>
@@ -117,58 +112,58 @@ export default function OwnerListingsPage() {
                   <th scope="col" className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-halo-border">
                 {filtered.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/80 transition">
+                  <tr key={item.id} className="hover:bg-stone-50/80 transition">
                     <td className="px-6 py-4">
                       <div className="space-y-0.5">
                         <Link
                           href={`/listings/${item.id}`}
-                          className="font-bold text-slate-900 hover:text-halo-primary hover:underline text-sm"
+                          className="font-semibold text-halo-ink hover:text-halo-ink hover:underline text-sm"
                         >
                           {item.title}
                         </Link>
-                        <p className="text-xs text-slate-400 line-clamp-1 max-w-xs">
+                        <p className="text-xs text-halo-text-muted line-clamp-1 max-w-xs">
                           {item.description}
                         </p>
                       </div>
                     </td>
 
                     <td className="px-6 py-4">
-                      <span className="capitalize text-xs font-semibold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700">
+                      <span className="capitalize text-xs font-semibold px-2 py-0.5 rounded-lg bg-stone-100 text-stone-700">
                         {item.type}
                       </span>
                     </td>
 
-                    <td className="px-6 py-4 font-bold text-slate-900">
+                    <td className="px-6 py-4 font-semibold text-halo-ink">
                       {item.type === 'service' ? (
-                        <span className="text-xs text-slate-600">
-                          From {formatETB(item.startingFromHint)} (Quote)
+                        <span className="text-xs text-stone-600">
+                          From {formatMoney(item.startingFromHint, currencyOfProvider(item.providerId))} (Quote)
                         </span>
                       ) : (
-                        <span>{formatETB(item.hourlyRate)} / hour</span>
+                        <span>{formatMoney(item.hourlyRate, currencyOfProvider(item.providerId))} / hour</span>
                       )}
                     </td>
 
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-block text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
-                          STATUS_BADGES[item.status] || 'bg-slate-100 text-slate-700'
+                        className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                          STATUS_BADGES[item.status] || 'bg-stone-100 text-stone-700'
                         }`}
                       >
-                        {item.status}
+                        {statusLabel(item.status)}
                       </span>
                     </td>
 
-                    <td className="px-6 py-4 text-xs text-slate-500">
+                    <td className="px-6 py-4 text-xs text-halo-text-muted">
                       {item.type === 'studio' && (
                         <span>
-                          👥 {item.capacity} pers • ⏱ Min {item.minHours}h • 🛡 {item.bufferMinutes}m buffer
+                          {item.capacity} pers, Min {item.minHours}h, {item.bufferMinutes}m buffer
                         </span>
                       )}
                       {item.type === 'equipment' && (
                         <span>
-                          📦 Qty: {item.quantity} • 💰 Deposit: {formatETB(item.deposit)} • {item.condition}
+                          Qty: {item.quantity}, Deposit: {formatMoney(item.deposit, currencyOfProvider(item.providerId))}, {item.condition}
                         </span>
                       )}
                       {item.type === 'service' && (
@@ -189,7 +184,7 @@ export default function OwnerListingsPage() {
 
                         <Link
                           href={`/owner/listings/${item.id}/edit`}
-                          className="px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg transition min-h-[44px] flex items-center"
+                          className="px-2.5 py-1.5 text-xs font-semibold text-stone-700 hover:bg-stone-100 rounded-lg transition min-h-[44px] flex items-center"
                         >
                           Edit
                         </Link>
@@ -198,8 +193,8 @@ export default function OwnerListingsPage() {
                           onClick={() => handleToggleActive(item.id)}
                           className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg transition min-h-[44px] ${
                             item.status === 'approved'
-                              ? 'text-amber-700 hover:bg-amber-50'
-                              : 'text-emerald-700 hover:bg-emerald-50'
+                            ? 'text-amber-700 hover:bg-amber-50'
+                            : 'text-emerald-700 hover:bg-emerald-50'
                           }`}
                         >
                           {item.status === 'approved' ? 'Pause' : 'Activate'}

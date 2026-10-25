@@ -2,21 +2,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useStorageSync } from '@/hooks/useStorageSync';
+import { useScopedStorage } from '@/hooks/useAdminScope';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { formatETB } from '@/lib/format';
+import { formatMoney } from '@/lib/format';
 import { moderateListing } from '@/lib/domain/listings';
+import { STATUS_TONES, statusLabel } from '@/lib/status';
+import { currencyOfProvider } from '@/lib/domain/providers';
 
-const STATUS_BADGES = {
-  approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  inactive: 'bg-slate-100 text-slate-600 border-slate-200',
-  rejected: 'bg-rose-50 text-rose-700 border-rose-200',
-};
+const STATUS_BADGES = STATUS_TONES;
 
 export default function AdminListingsPage() {
-  const { data: listings, refresh } = useStorageSync(STORAGE_KEYS.LISTINGS, []);
-  const { data: providers } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
+  const { data: listings, refresh } = useScopedStorage(STORAGE_KEYS.LISTINGS);
+  const { data: providers } = useScopedStorage(STORAGE_KEYS.PROVIDERS);
   const providerMap = new Map(providers.map((p) => [p.id, p]));
 
   const [filter, setFilter] = useState('all');
@@ -42,36 +39,35 @@ export default function AdminListingsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-200">
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Listing Moderation</h1>
-        <p className="text-xs text-slate-500 mt-1">
+      <div className="pb-4 border-b border-halo-border">
+        <h1 className="text-2xl font-semibold text-halo-ink">Listing Moderation</h1>
+        <p className="text-xs text-halo-text-muted mt-1">
           Review, approve, reject, or suspend individual studio rooms and equipment packages.
         </p>
       </div>
 
       {feedback.text && (
         <div
-          className={`p-4 rounded-xl text-sm font-medium border shadow-sm ${
+          className={`p-4 rounded-xl text-sm font-medium border ${
             feedback.type === 'error'
-              ? 'bg-red-50 text-red-700 border-red-200'
-              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
           }`}
         >
-          {feedback.type === 'error' ? '⚠️ ' : '✓ '}
           {feedback.text}
         </div>
       )}
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-halo-border pb-2 overflow-x-auto">
         {['all', 'pending', 'approved', 'rejected', 'inactive'].map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition min-h-[44px] ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold capitalize transition min-h-[44px] ${
               filter === status
-                ? 'bg-slate-900 text-white shadow'
-                : 'text-slate-600 hover:bg-slate-100'
+              ? 'bg-stone-900 text-white'
+              : 'text-stone-600 hover:bg-stone-100'
             }`}
           >
             {status} ({status === 'all' ? listings.length : listings.filter((l) => l.status === status).length})
@@ -79,10 +75,10 @@ export default function AdminListingsPage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-2xl border border-halo-border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-700">
-            <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
+          <table className="w-full text-left text-sm text-stone-700">
+            <thead className="bg-stone-50 text-xs font-semibold text-halo-text-muted border-b border-halo-border">
               <tr>
                 <th scope="col" className="px-6 py-4">Listing Title</th>
                 <th scope="col" className="px-6 py-4">Provider</th>
@@ -91,44 +87,44 @@ export default function AdminListingsPage() {
                 <th scope="col" className="px-6 py-4 text-right">Moderation Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-halo-border">
               {filtered.map((item) => {
                 const provider = providerMap.get(item.providerId);
                 return (
-                  <tr key={item.id} className="hover:bg-slate-50 transition">
+                  <tr key={item.id} className="hover:bg-stone-50 transition">
                     <td className="px-6 py-4">
                       <div className="space-y-0.5">
                         <Link
                           href={`/listings/${item.id}`}
-                          className="font-bold text-slate-900 hover:text-halo-primary hover:underline"
+                          className="font-semibold text-halo-ink hover:text-halo-ink hover:underline"
                         >
                           {item.title}
                         </Link>
-                        <p className="text-xs text-slate-400 line-clamp-1 max-w-xs">{item.description}</p>
+                        <p className="text-xs text-halo-text-muted line-clamp-1 max-w-xs">{item.description}</p>
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 text-xs font-semibold text-slate-800">
+                    <td className="px-6 py-4 text-xs font-semibold text-halo-ink">
                       {provider ? provider.name : 'Unknown'}
-                      <p className="text-[11px] font-normal text-slate-400">{provider?.neighbourhood}</p>
+                      <p className="text-[11px] font-normal text-halo-text-muted">{provider?.neighbourhood}</p>
                     </td>
 
                     <td className="px-6 py-4 text-xs">
-                      <span className="capitalize font-semibold text-slate-900 block">{item.type}</span>
-                      <span className="text-slate-500">
+                      <span className="capitalize font-semibold text-halo-ink block">{item.type}</span>
+                      <span className="text-halo-text-muted">
                         {item.type === 'service'
-                          ? `From ${formatETB(item.startingFromHint)}`
-                          : `${formatETB(item.hourlyRate)}/hr`}
+                          ? `From ${formatMoney(item.startingFromHint, currencyOfProvider(item.providerId))}`
+                          : `${formatMoney(item.hourlyRate, currencyOfProvider(item.providerId))}/hr`}
                       </span>
                     </td>
 
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-block text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
-                          STATUS_BADGES[item.status] || 'bg-slate-100'
+                        className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                          STATUS_BADGES[item.status] || 'bg-stone-100'
                         }`}
                       >
-                        {item.status}
+                        {statusLabel(item.status)}
                       </span>
                     </td>
 
@@ -137,16 +133,15 @@ export default function AdminListingsPage() {
                         {item.status !== 'approved' && (
                           <button
                             onClick={() => handleDecision(item.id, 'approved')}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm min-h-[44px]"
-                          >
-                            ✓ Approve
+                            className="px-3 py-1.5 bg-halo-ink hover:bg-halo-ink-soft text-white rounded-xl text-xs font-semibold transition min-h-[44px]"
+                          >Approve
                           </button>
                         )}
 
                         {item.status !== 'rejected' && (
                           <button
                             onClick={() => handleDecision(item.id, 'rejected')}
-                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition min-h-[44px]"
+                            className="px-3 py-1.5 bg-white hover:bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-semibold transition min-h-[44px]"
                           >
                             Reject
                           </button>

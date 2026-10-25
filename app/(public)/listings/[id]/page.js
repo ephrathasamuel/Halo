@@ -12,16 +12,16 @@ export async function generateMetadata({ params }) {
 
   if (!listing) {
     return {
-      title: 'Listing Not Found | Halo',
+      title: 'Listing not found',
       description: 'The requested listing is not available.',
     };
   }
 
   return {
-    title: `${listing.title} | ${provider ? provider.name : 'Halo Marketplace'}`,
+    title: provider ? `${listing.title} by ${provider.name}` : listing.title,
     description: listing.description?.slice(0, 160),
     openGraph: {
-      title: `${listing.title} — ${provider?.name || 'Halo'}`,
+      title: provider ? `${listing.title} by ${provider.name}` : listing.title,
       description: listing.description?.slice(0, 160),
       images: [listing.photos?.[0] || '/images/listings/b-light-studio-1.jpg'],
     },

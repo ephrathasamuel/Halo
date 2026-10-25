@@ -1,209 +1,237 @@
 'use client';
 
 import { useState } from 'react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Select } from '@/components/ui/Select';
+
+const TYPES = [
+  { value: '', label: 'All' },
+  { value: 'studio', label: 'Studios' },
+  { value: 'equipment', label: 'Equipment' },
+  { value: 'service', label: 'Event filming' },
+  { value: 'sale', label: 'For sale' },
+];
+
+const fieldClass =
+  'w-full px-3 rounded-xl border border-halo-border-strong bg-halo-surface text-sm text-halo-ink focus:border-halo-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-gold';
+
+const selectButtonClass =
+  'min-h-[44px] px-3 rounded-xl border border-halo-border-strong bg-halo-surface text-sm hover:border-halo-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-gold';
 
 /**
- * Filter and search bar for the browse catalogue.
+ * Filter and search controls for the browse catalogue.
  * @param {{
  *   filters: object,
  *   onFilterChange: (newFilters: object) => void,
  *   onReset: () => void,
- *   totalResults: number
+ *   totalResults: number,
+ *   regions?: string[],
+ *   cities?: string[],
+ *   neighbourhoods?: string[],
+ *   currency?: string
  * }} props
  */
-export function BrowseFilterBar({ filters, onFilterChange, onReset, totalResults }) {
-  const [mobileExpanded, setMobileExpanded] = useState(false);
+export function BrowseFilterBar({
+  filters,
+  onFilterChange,
+  onReset,
+  totalResults,
+  regions = [],
+  cities = [],
+  neighbourhoods = [],
+  currency = '',
+}) {
+  const [panelOpen, setPanelOpen] = useState(false);
 
-  const neighbourhoods = ['Bole', 'Arada', 'Kazanchis', 'Megenagna', 'Sarbet'];
-
-  const handleInputChange = (field, value) => {
-    onFilterChange({
-      ...filters,
-      [field]: value,
-      page: 1, // Reset to page 1 on filter change
-    });
+  const update = (field, value) => {
+    onFilterChange({ ...filters, [field]: value, page: 1 });
   };
 
-  const hasActiveFilters = Boolean(
-    filters.query ||
-    filters.type ||
-    filters.neighbourhood ||
-    filters.minPrice ||
-    filters.maxPrice ||
-    filters.capacity ||
-    filters.date
-  );
+  // Choosing a broader place clears the narrower ones under it
+  const setRegion = (region) => onFilterChange({ ...filters, region, city: '', neighbourhood: '', page: 1 });
+  const setCity = (city) => onFilterChange({ ...filters, city, neighbourhood: '', page: 1 });
+
+  const activeFilterCount = [
+    filters.region,
+    filters.city,
+    filters.neighbourhood,
+    filters.minPrice,
+    filters.maxPrice,
+    filters.date,
+  ].filter(Boolean).length;
+  const hasAnyFilter = Boolean(filters.query || filters.type || activeFilterCount);
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-4">
-      {/* Top row: Search input & Sort */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        {/* Search Input */}
+    <div className="space-y-4">
+      {/* Category pills */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0" role="group" aria-label="Category">
+        {TYPES.map((t) => {
+          const active = (filters.type || '') === t.value;
+          return (
+            <button
+              key={t.value || 'all'}
+              type="button"
+              onClick={() => update('type', t.value)}
+              aria-pressed={active}
+              className={`shrink-0 px-4 rounded-full text-sm font-medium border transition-colors min-h-[40px] ${
+                active
+                  ? 'bg-halo-ink border-halo-ink text-white'
+                  : 'bg-white border-halo-border-strong text-halo-ink hover:border-halo-ink'
+              }`}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Search, filters toggle (phones) */}
+      <div className="flex gap-2">
         <div className="relative flex-1">
           <label htmlFor="search-input" className="sr-only">
-            Search listings by keyword or title
+            Search listings
           </label>
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <span aria-hidden="true">🔍</span>
-          </div>
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-halo-text-muted pointer-events-none" aria-hidden="true" />
           <input
             id="search-input"
-            type="text"
+            type="search"
             value={filters.query || ''}
-            onChange={(e) => handleInputChange('query', e.target.value)}
-            placeholder="Search studios, camera kits, lighting, filming..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 text-sm focus:border-halo-primary focus:ring-1 focus:ring-halo-primary min-h-[44px]"
+            onChange={(e) => update('query', e.target.value)}
+            placeholder="Search by name, gear or style"
+            className={`${fieldClass} pl-9 pr-9`}
           />
           {filters.query && (
             <button
-              onClick={() => handleInputChange('query', '')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 text-sm min-h-[44px] min-w-[32px]"
-              aria-label="Clear search input"
+              type="button"
+              onClick={() => update('query', '')}
+              className="absolute right-0 top-0 h-full px-3 text-halo-text-muted hover:text-halo-ink"
+              aria-label="Clear search"
             >
-              ✕
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           )}
         </div>
-
-        {/* Sort Select */}
-        <div className="flex items-center gap-2">
-          <label htmlFor="sort-select" className="text-xs font-medium text-slate-600 whitespace-nowrap hidden sm:inline">
-            Sort by:
-          </label>
-          <select
-            id="sort-select"
-            value={filters.sort || 'popularity'}
-            onChange={(e) => handleInputChange('sort', e.target.value)}
-            className="w-full sm:w-auto px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-medium bg-slate-50 focus:bg-white focus:border-halo-primary min-h-[44px]"
-          >
-            <option value="popularity">Most Popular</option>
-            <option value="price_asc">Price: Low to High</option>
-            <option value="price_desc">Price: High to Low</option>
-            <option value="newest">Newest First</option>
-          </select>
-        </div>
-
-        {/* Mobile Filter Toggle */}
         <button
-          onClick={() => setMobileExpanded(!mobileExpanded)}
-          className="sm:hidden inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 min-h-[44px]"
-          aria-expanded={mobileExpanded}
-          aria-controls="mobile-filter-drawer"
+          type="button"
+          onClick={() => setPanelOpen((o) => !o)}
+          className="md:hidden inline-flex items-center gap-2 px-3.5 rounded-lg border border-halo-border-strong bg-white text-sm font-medium text-halo-ink"
+          aria-expanded={panelOpen}
+          aria-controls="browse-filters"
         >
-          <span>⚙️</span>
-          <span>Filters {hasActiveFilters ? '(Active)' : ''}</span>
-          <span className="text-xs">{mobileExpanded ? '▲' : '▼'}</span>
+          <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-halo-ink px-1.5 text-[11px] font-semibold text-white">
+              {activeFilterCount}
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Filter Options (Desktop always visible, Mobile toggleable) */}
+      {/* Filters: always visible from tablet up, toggled on phones */}
       <div
-        id="mobile-filter-drawer"
-        className={`${mobileExpanded ? 'block' : 'hidden'} sm:block pt-3 border-t border-slate-100 space-y-3`}
+        id="browse-filters"
+        className={`${panelOpen ? 'grid' : 'hidden'} md:grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3`}
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* Type Filter */}
-          <div>
-            <label htmlFor="filter-type" className="block text-xs font-semibold text-slate-700 mb-1">
-              Category
-            </label>
-            <select
-              id="filter-type"
-              value={filters.type || ''}
-              onChange={(e) => handleInputChange('type', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white min-h-[44px]"
-            >
-              <option value="">All Categories</option>
-              <option value="studio">Studios</option>
-              <option value="equipment">Equipment</option>
-              <option value="service">Filming Services</option>
-            </select>
-          </div>
-
-          {/* Neighbourhood Filter */}
-          <div>
-            <label htmlFor="filter-neighbourhood" className="block text-xs font-semibold text-slate-700 mb-1">
-              Neighbourhood
-            </label>
-            <select
-              id="filter-neighbourhood"
-              value={filters.neighbourhood || ''}
-              onChange={(e) => handleInputChange('neighbourhood', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white min-h-[44px]"
-            >
-              <option value="">All Areas (Addis Ababa)</option>
-              {neighbourhoods.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Min Price Filter */}
-          <div>
-            <label htmlFor="filter-min-price" className="block text-xs font-semibold text-slate-700 mb-1">
-              Min Price (ETB)
-            </label>
-            <input
-              id="filter-min-price"
-              type="number"
-              min="0"
-              step="50"
-              placeholder="e.g. 200"
-              value={filters.minPrice || ''}
-              onChange={(e) => handleInputChange('minPrice', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm min-h-[44px]"
-            />
-          </div>
-
-          {/* Max Price Filter */}
-          <div>
-            <label htmlFor="filter-max-price" className="block text-xs font-semibold text-slate-700 mb-1">
-              Max Price (ETB)
-            </label>
-            <input
-              id="filter-max-price"
-              type="number"
-              min="0"
-              step="50"
-              placeholder="e.g. 1000"
-              value={filters.maxPrice || ''}
-              onChange={(e) => handleInputChange('maxPrice', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm min-h-[44px]"
-            />
-          </div>
-
-          {/* Date Filter */}
-          <div>
-            <label htmlFor="filter-date" className="block text-xs font-semibold text-slate-700 mb-1">
-              Date Availability
-            </label>
-            <input
-              id="filter-date"
-              type="date"
-              value={filters.date || ''}
-              onChange={(e) => handleInputChange('date', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm min-h-[44px]"
-            />
-          </div>
+        <Select
+          label="Region"
+          value={filters.region || ''}
+          onChange={setRegion}
+          options={[{ value: '', label: regions.length ? 'All regions' : 'Choose a country first' }, ...regions.map((r) => ({ value: r, label: r }))]}
+          buttonClassName={selectButtonClass}
+        />
+        <Select
+          label="City"
+          value={filters.city || ''}
+          onChange={setCity}
+          options={[{ value: '', label: cities.length ? 'All cities' : 'Choose a country first' }, ...cities.map((c) => ({ value: c, label: c }))]}
+          buttonClassName={selectButtonClass}
+        />
+        <Select
+          label="Area"
+          value={filters.neighbourhood || ''}
+          onChange={(v) => update('neighbourhood', v)}
+          options={[{ value: '', label: 'All areas' }, ...neighbourhoods.map((n) => ({ value: n, label: n }))]}
+          className="col-span-2 md:col-span-1"
+          buttonClassName={selectButtonClass}
+        />
+        <div>
+          <label htmlFor="filter-min-price" className="block text-xs font-medium text-halo-text-muted mb-1">
+            Min price{currency ? ` (${currency})` : ''}
+          </label>
+          <input
+            id="filter-min-price"
+            type="number"
+            inputMode="numeric"
+            min="0"
+            step="50"
+            placeholder="0"
+            value={filters.minPrice || ''}
+            onChange={(e) => update('minPrice', e.target.value)}
+            className={fieldClass}
+          />
         </div>
+        <div>
+          <label htmlFor="filter-max-price" className="block text-xs font-medium text-halo-text-muted mb-1">
+            Max price{currency ? ` (${currency})` : ''}
+          </label>
+          <input
+            id="filter-max-price"
+            type="number"
+            inputMode="numeric"
+            min="0"
+            step="50"
+            placeholder="Any"
+            value={filters.maxPrice || ''}
+            onChange={(e) => update('maxPrice', e.target.value)}
+            className={fieldClass}
+          />
+        </div>
+        <div className="col-span-2 md:col-span-1">
+          <label htmlFor="filter-date" className="block text-xs font-medium text-halo-text-muted mb-1">
+            Available on
+          </label>
+          <input
+            id="filter-date"
+            type="date"
+            value={filters.date || ''}
+            onChange={(e) => update('date', e.target.value)}
+            className={fieldClass}
+          />
+        </div>
+      </div>
 
-        {/* Status & Active Filter tags */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-          <div className="text-xs text-slate-500 font-medium">
-            Showing <span className="font-bold text-slate-800">{totalResults}</span> active verified listings
-          </div>
-
-          {hasActiveFilters && (
+      {/* Result count, reset, sort */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-halo-border pt-4">
+        <div className="flex items-center gap-3 text-sm">
+          <p className="text-halo-ink" aria-live="polite">
+            <span className="font-semibold tabular">{totalResults}</span>{' '}
+            {totalResults === 1 ? 'listing' : 'listings'}
+          </p>
+          {hasAnyFilter && (
             <button
+              type="button"
               onClick={onReset}
-              className="text-xs font-semibold text-red-600 hover:text-red-700 hover:underline min-h-[44px] flex items-center gap-1"
+              className="text-sm font-medium text-halo-text-muted underline underline-offset-2 hover:text-halo-ink min-h-[36px]"
             >
-              <span>✕</span> Clear all filters
+              Clear all
             </button>
           )}
         </div>
+        <Select
+          label="Sort"
+          hideLabel
+          align="right"
+          value={filters.sort || 'popularity'}
+          onChange={(v) => update('sort', v)}
+          options={[
+            { value: 'popularity', label: 'Most popular' },
+            { value: 'price_asc', label: 'Price, low to high' },
+            { value: 'price_desc', label: 'Price, high to low' },
+            { value: 'newest', label: 'Newest' },
+          ]}
+          buttonClassName="min-h-[40px] gap-3 px-3.5 rounded-xl border border-halo-border-strong bg-halo-surface text-sm font-medium hover:border-halo-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-gold"
+        />
       </div>
     </div>
   );

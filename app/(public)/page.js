@@ -1,35 +1,90 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { ArrowRight, Search } from 'lucide-react';
 import { getPublicListings } from '@/lib/domain/listings';
 import { getPublicProviders } from '@/lib/domain/providers';
 import { ListingCard } from '@/components/listings/ListingCard';
+import { ListingGridSkeleton } from '@/components/states/LoadingState';
+import { SafeImage } from '@/components/ui/SafeImage';
+import { AnnouncementToast } from '@/components/ui/AnnouncementToast';
+import { Select } from '@/components/ui/Select';
 import { readStorage } from '@/lib/storage/readStorage';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { SafeImage } from '@/components/ui/SafeImage';
+import { useHydrated } from '@/hooks/useHydrated';
+import { useCountry } from '@/hooks/useCountry';
+import { countryName } from '@/lib/geo';
+
+const CATEGORIES = [
+  {
+    type: 'studio',
+    title: 'Studios',
+    blurb: 'Cyclorama stages, natural light lofts, podcast rooms',
+    image: '/images/listings/b-light-studio-1.jpg',
+  },
+  {
+    type: 'equipment',
+    title: 'Equipment',
+    blurb: 'Cinema cameras, lenses, lighting, audio, drones',
+    image: '/images/listings/b-light-camera.jpg',
+  },
+  {
+    type: 'service',
+    title: 'Event filming',
+    blurb: 'Wedding, engagement and corporate film crews',
+    image: '/images/listings/b-light-wedding.jpg',
+  },
+  {
+    type: 'sale',
+    title: 'For sale',
+    blurb: 'Used and new gear from studios and rental houses',
+    image: '/images/listings/sale-camera.jpg',
+  },
+];
+
+const STEPS = [
+  {
+    title: 'Find what fits',
+    text: 'Filter by area, price, date and size. Every listing shows its real hourly price and what is included.',
+  },
+  {
+    title: 'Book or ask for a quote',
+    text: 'Studios and gear are booked by the hour with the full price shown before you confirm. Film crews send you a quote.',
+  },
+  {
+    title: 'Shoot, then review',
+    text: 'Equipment deposits come back after return. Leave a review so the next creative knows what to expect.',
+  },
+];
 
 export default function HomePage() {
   const router = useRouter();
+  const hydrated = useHydrated();
+  const { country } = useCountry();
+  const ready = hydrated && country !== null;
+  const place = country ? countryName(country) : '';
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('');
-  const [mounted, setMounted] = useState(false);
 
-  // Storage is only available in the browser; reading it during the first render
-  // would make the client output differ from the server HTML (hydration error).
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const featuredListings = mounted
-    ? getPublicListings({ pageSize: 6, sort: 'popularity' }).items
+  // Storage is browser-only: read it after mount so server and client HTML match
+  // Everything below follows the country chosen in the header
+  const featuredListings = ready
+    ? getPublicListings({ country, pageSize: 6, sort: 'popularity' }).items
     : [];
-  const providers = mounted ? getPublicProviders() : [];
-
-  // Read active announcements
-  const announcements = mounted ? readStorage(STORAGE_KEYS.ANNOUNCEMENTS, []).data : [];
+  const providers = ready ? getPublicProviders({ country }) : [];
+  const typeCounts = ready
+    ? Object.fromEntries(
+        CATEGORIES.map((c) => [c.type, getPublicListings({ country, type: c.type, pageSize: 1 }).total])
+      )
+    : {};
+  // Only when a specific country is chosen and nobody has listed there yet
+  const noProvidersYet = ready && Boolean(country) && providers.length === 0;
+  const announcements = hydrated ? readStorage(STORAGE_KEYS.ANNOUNCEMENTS, []).data : [];
   const activeAnnouncement = announcements.find((a) => a.active);
+  const featuredProvider = providers.find((p) => p.featured) || providers[0];
 
   const handleHeroSearch = (e) => {
     e.preventDefault();
@@ -41,276 +96,264 @@ export default function HomePage() {
   };
 
   return (
-    <div className="space-y-16 pb-16">
-      {/* Active Announcement Banner */}
-      {activeAnnouncement && (
-        <div
-          className="bg-amber-500 text-slate-950 font-medium px-4 py-3 text-center text-sm shadow-inner flex items-center justify-center gap-2"
-          role="alert"
-        >
-          <span className="font-bold">📢 {activeAnnouncement.title}:</span>
-          <span>{activeAnnouncement.message}</span>
-        </div>
-      )}
+    <div className="pb-20">
+      {/* Hero */}
+      {/* No overflow-hidden: the category dropdown menu must be able to hang below the hero */}
+      <section className="relative z-20 isolate bg-black">
+        <Image
+          src="/images/site/hero-addis.jpg"
+          alt=""
+          fill
+          priority
+          unoptimized
+          className="object-cover -z-10 opacity-60"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/75 via-black/45 to-black/10" />
 
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-amber-300 text-xs font-semibold backdrop-blur-sm border border-white/10">
-            <span>✨</span> Creative Studio & Production Gear Marketplace in Addis Ababa
+        {/* Floats over the photo; takes no space in the layout */}
+        {activeAnnouncement && (
+          <div className="absolute inset-x-0 top-4 sm:top-6 z-10 pointer-events-none">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex lg:justify-end">
+              <AnnouncementToast announcement={activeAnnouncement} />
+            </div>
+          </div>
+        )}
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 sm:pt-32 sm:pb-24 lg:pt-28">
+          <div className="max-w-2xl">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-on-photo leading-[1.05]">
+              Studios, gear and film crews in your city
+            </h1>
+            <p className="mt-5 text-lg text-on-photo/80 max-w-xl leading-relaxed">
+              Book a photo studio by the hour, rent a cinema camera for the weekend, or get a quote
+              for your wedding film. Every price is shown up front, in local currency.
+            </p>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight leading-tight">
-            Book Top Studios & Cinema Gear <br className="hidden sm:inline" />
-            <span className="text-amber-400">Right in Addis Ababa</span>
-          </h1>
-
-          <p className="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            Connect directly with verified creative storefronts. Rent soundstages in Bole, natural
-            light studios in Arada, cinema camera kits, and professional event filming crews.
-          </p>
-
-          {/* Hero Search Box */}
           <form
             onSubmit={handleHeroSearch}
-            className="bg-white p-2.5 sm:p-3 rounded-2xl shadow-2xl max-w-3xl mx-auto flex flex-col sm:flex-row gap-2.5 text-slate-800"
+            className="mt-9 max-w-3xl bg-white rounded-2xl p-2 shadow-2xl flex flex-col sm:flex-row gap-2"
+            role="search"
           >
-            <div className="flex-1 relative flex items-center">
-              <span className="pl-3.5 text-slate-400 select-none" aria-hidden="true">
-                🔍
-              </span>
+            {/* Each part gets a rounded ring when focused, instead of a square outline */}
+            <div className="flex-1 flex items-center gap-2 px-3 rounded-xl ring-halo-gold focus-within:ring-2">
+              <Search className="w-5 h-5 text-halo-text-muted shrink-0" aria-hidden="true" />
               <label htmlFor="hero-search" className="sr-only">
-                Search creative spaces or gear
+                What do you need?
               </label>
               <input
                 id="hero-search"
-                type="text"
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search studio, camera kit, lighting, audio..."
-                className="w-full px-3 py-2.5 text-sm outline-none placeholder:text-slate-400 min-h-[44px]"
+                placeholder="Try podcast room, RED camera, wedding"
+                className="w-full py-2 text-[15px] text-halo-ink outline-none focus-visible:outline-none placeholder:text-halo-text-muted bg-transparent"
               />
             </div>
-
-            <div className="sm:w-48 sm:border-l sm:border-slate-200">
-              <label htmlFor="hero-category" className="sr-only">
-                Category
-              </label>
-              <select
-                id="hero-category"
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full h-full px-3 py-2.5 text-sm bg-transparent font-medium text-slate-700 outline-none cursor-pointer min-h-[44px]"
-              >
-                <option value="">All Categories</option>
-                <option value="studio">Studios</option>
-                <option value="equipment">Equipment</option>
-                <option value="service">Event Filming</option>
-              </select>
-            </div>
-
+            <Select
+              label="Category"
+              hideLabel
+              value={selectedType}
+              onChange={setSelectedType}
+              options={[
+                { value: '', label: 'Everything' },
+                { value: 'studio', label: 'Studios' },
+                { value: 'equipment', label: 'Equipment' },
+                { value: 'service', label: 'Event filming' },
+              ]}
+              className="sm:w-48 sm:border-l sm:border-halo-border sm:pl-2"
+              buttonClassName="h-full min-h-[48px] px-3 rounded-xl hover:bg-halo-ink/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-gold"
+            />
             <button
               type="submit"
-              className="bg-halo-primary hover:bg-halo-primary-light text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors shadow-md min-h-[44px] flex items-center justify-center gap-2"
+              className="bg-halo-ink hover:bg-halo-ink-soft text-white font-semibold px-6 rounded-xl text-[15px] transition-colors min-h-[48px]"
             >
-              <span>Explore</span>
-              <span>→</span>
+              Search
             </button>
           </form>
-
-          {/* Fast Category Pills */}
-          <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-slate-300">
-            <span className="text-slate-400">Popular shortcuts:</span>
-            <Link
-              href="/browse?type=studio"
-              className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors min-h-[32px] flex items-center"
-            >
-              🏢 Studios
-            </Link>
-            <Link
-              href="/browse?type=equipment"
-              className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors min-h-[32px] flex items-center"
-            >
-              📹 Cinema Cameras
-            </Link>
-            <Link
-              href="/browse?type=service"
-              className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors min-h-[32px] flex items-center"
-            >
-              🎬 Wedding Filming
-            </Link>
-            <Link
-              href="/studios/b-light"
-              className="px-3 py-1.5 rounded-full bg-amber-400/20 text-amber-300 hover:bg-amber-400/30 transition-colors font-semibold min-h-[32px] flex items-center"
-            >
-              ⭐ Flagship: B Light
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* Featured Verified Listings */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+      {/* Categories */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14" aria-labelledby="categories-heading">
+        <h2 id="categories-heading" className="sr-only">
+          Categories
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {CATEGORIES.map((c) => (
+            <Link
+              key={c.type}
+              href={`/browse?type=${c.type}`}
+              className="group relative isolate overflow-hidden rounded-2xl aspect-[16/10] sm:aspect-[4/3] lg:aspect-[4/5] flex items-end p-5"
+            >
+              <SafeImage
+                src={c.image}
+                alt=""
+                fill
+                className="object-cover -z-10 transition-transform duration-500 group-hover:scale-[1.04]"
+                sizes="(max-width: 640px) 100vw, 33vw"
+              />
+              <span className="absolute inset-0 -z-10 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <span>
+                <span className="block text-xl font-semibold text-on-photo">{c.title}</span>
+                <span className="block mt-0.5 text-sm text-on-photo/80">{c.blurb}</span>
+                <span className="mt-2 block text-sm font-medium text-on-photo tabular">
+                  {typeCounts[c.type] != null ? `${typeCounts[c.type]} listings` : ' '}
+                </span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* Featured listings */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16" aria-labelledby="featured-heading">
+        <div className="flex items-end justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              Featured Listings
+            <h2 id="featured-heading" className="text-2xl sm:text-3xl font-semibold text-halo-ink">
+              Popular right now
             </h2>
-            <p className="text-slate-500 text-sm mt-1">
-              Popular studios, camera kits, and production packages ready for instant booking.
+            <p className="mt-1 text-halo-text-muted">
+              The most booked spaces and kits{place ? ` in ${place}` : ''}.
             </p>
           </div>
           <Link
             href="/browse"
-            className="text-sm font-bold text-halo-primary hover:underline flex items-center gap-1 min-h-[44px]"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-halo-ink hover:underline"
           >
-            View all listings ({featuredListings.length}+) →
+            See all listings
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredListings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
-          ))}
-        </div>
-      </section>
-
-      {/* Flagship Provider Highlight Banner */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/70 text-white rounded-3xl p-6 sm:p-10 border border-amber-500/20 shadow-xl flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="space-y-3 max-w-xl">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-              Flagship Studio Storefront
-            </span>
-            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
-              B Light Creative Studio
-            </h2>
-            <p className="text-slate-300 text-sm leading-relaxed">
-              Located in Bole, B Light provides high-ceiling cyclorama stages, RED & cinema camera
-              packages, sound equipment, and Hollywood-level wedding cinematography.
+        {noProvidersYet ? (
+          <div className="rounded-3xl border border-dashed border-halo-border-strong bg-halo-surface px-6 py-12 text-center">
+            <h3 className="text-xl font-semibold text-halo-ink">Halo is just opening in {place}</h3>
+            <p className="mt-2 text-halo-text-muted max-w-md mx-auto">
+              No studios or rental houses are listed here yet. Run one? Be the first provider in {place}.
             </p>
-            <div className="flex flex-wrap gap-4 pt-2">
-              <Link
-                href="/studios/b-light"
-                className="inline-flex items-center justify-center px-5 py-2.5 bg-amber-400 text-slate-950 rounded-xl font-bold text-sm hover:bg-amber-300 transition-colors min-h-[44px]"
-              >
-                Visit B Light Storefront
-              </Link>
-              <Link
-                href="/studios/b-light/portfolio"
-                className="inline-flex items-center justify-center px-5 py-2.5 bg-white/10 text-white rounded-xl font-bold text-sm hover:bg-white/20 transition-colors min-h-[44px]"
-              >
-                View Portfolio
-              </Link>
-            </div>
+            <Link
+              href="/signup?as=provider"
+              className="mt-6 inline-flex items-center px-5 rounded-xl bg-halo-ink text-white text-sm font-semibold hover:bg-halo-ink-soft"
+            >
+              List your space or gear
+            </Link>
           </div>
+        ) : ready ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
+            {featuredListings.map((listing, i) => (
+              <ListingCard key={listing.id} listing={listing} priority={i < 3} />
+            ))}
+          </div>
+        ) : (
+          <ListingGridSkeleton count={6} />
+        )}
 
-          <div className="w-full md:w-80 aspect-video relative rounded-2xl overflow-hidden border border-white/10 shadow-lg">
-            <SafeImage
-              src="/images/providers/b-light-cover.jpg"
-              alt="B Light Studio"
-              fallbackType="provider"
-              fill
-              className="object-cover"
-            />
-          </div>
-        </div>
+        <Link
+          href="/browse"
+          className="sm:hidden mt-8 flex items-center justify-center rounded-xl border border-halo-border-strong text-sm font-semibold text-halo-ink"
+        >
+          See all listings
+        </Link>
       </section>
 
-      {/* Provider Strip */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+      {/* Providers */}
+      <section
+        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 ${noProvidersYet ? 'hidden' : ''}`}
+        aria-labelledby="providers-heading"
+      >
+        <div className="flex items-end justify-between gap-4 mb-6">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              Independent Addis Ababa Studios
+            <h2 id="providers-heading" className="text-2xl sm:text-3xl font-semibold text-halo-ink">
+              Independent providers
             </h2>
-            <p className="text-slate-500 text-sm mt-1">
-              Explore independent providers with their own specialized spaces and equipment.
+            <p className="mt-1 text-halo-text-muted">
+              Each studio runs its own storefront on Halo, with its own work and reviews.
             </p>
           </div>
           <Link
             href="/studios"
-            className="text-sm font-bold text-halo-primary hover:underline flex items-center gap-1 min-h-[44px]"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-halo-ink hover:underline"
           >
-            All Studios ({providers.length}) →
+            All providers
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-x-auto no-scrollbar snap-x">
           {providers.map((p) => (
             <Link
               key={p.id}
               href={`/studios/${p.slug}`}
-              className="group bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between text-center items-center min-h-[140px]"
-              style={{ borderTop: `3px solid ${p.brandColor}` }}
+              className="group snap-start shrink-0 w-[78%] sm:w-auto flex items-center gap-4 rounded-2xl border border-halo-border bg-white p-3 hover:border-halo-border-strong transition-colors"
             >
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg shadow-sm mb-2 group-hover:scale-105 transition-transform"
-                style={{ backgroundColor: p.brandColor }}
-              >
-                {p.name.charAt(0)}
-              </div>
-              <div>
-                <h3 className="font-bold text-slate-900 text-sm group-hover:text-halo-primary transition-colors">
-                  {p.name}
-                </h3>
-                <span className="text-[11px] text-slate-400 font-medium">
-                  📍 {p.neighbourhood}
+              <span className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-halo-placeholder">
+                <SafeImage src={p.cover} alt="" fallbackType="provider" fill className="object-cover" sizes="80px" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold text-halo-ink truncate">{p.name}</span>
+                <span className="block text-sm text-halo-text-muted truncate">{p.tagline}</span>
+                <span className="block text-[13px] text-halo-text-muted mt-0.5">
+                  {p.neighbourhood}, {p.city}
                 </span>
-              </div>
+              </span>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="bg-slate-50 py-16 border-y border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-          <div className="text-center max-w-2xl mx-auto">
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              How Halo Works
-            </h2>
-            <p className="text-slate-500 text-sm mt-2">
-              A transparent, reliable marketplace designed for filmmakers, photographers, and event
-              planners in Addis Ababa.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-700 font-bold text-xl flex items-center justify-center">
-                1
-              </div>
-              <h3 className="font-bold text-slate-900 text-lg">Browse & Check Availability</h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Filter studios by hourly rate, capacity, and neighbourhood. Check live calendar
-                availability with automated conflict prevention and cleanup buffers.
-              </p>
+      {/* Featured provider */}
+      {featuredProvider && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
+          <div className="grid lg:grid-cols-2 overflow-hidden rounded-3xl bg-halo-ink text-white">
+            <div className="relative min-h-[240px] lg:min-h-[380px]">
+              <SafeImage
+                src={featuredProvider.cover}
+                alt={`Inside ${featuredProvider.name}`}
+                fallbackType="provider"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
             </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 font-bold text-xl flex items-center justify-center">
-                2
+            <div className="p-8 sm:p-12 flex flex-col justify-center">
+              <p className="text-sm font-medium text-halo-gold">Featured provider</p>
+              <h2 className="mt-2 text-3xl font-semibold">{featuredProvider.name}</h2>
+              <p className="mt-3 text-white/75 leading-relaxed line-clamp-4">{featuredProvider.about}</p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link
+                  href={`/studios/${featuredProvider.slug}`}
+                  className="inline-flex items-center px-5 rounded-xl bg-white text-halo-ink text-sm font-semibold hover:bg-white/90"
+                >
+                  Visit storefront
+                </Link>
+                <Link
+                  href={`/studios/${featuredProvider.slug}/portfolio`}
+                  className="inline-flex items-center px-5 rounded-xl border border-white/25 text-sm font-semibold hover:bg-white/10"
+                >
+                  See their work
+                </Link>
               </div>
-              <h3 className="font-bold text-slate-900 text-lg">Reserve with Transparent Terms</h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Transparent 10% platform commission with clear fee breakdown before confirmation.
-                Equipment deposits are tracked separately and refunded after return.
-              </p>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-xl flex items-center justify-center">
-                3
-              </div>
-              <h3 className="font-bold text-slate-900 text-lg">Create, Review & Resolve</h3>
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Execute your production, leave verified renter reviews with owner response rights,
-                and resolve any disputes through clear admin mediation.
-              </p>
             </div>
           </div>
-        </div>
+        </section>
+      )}
+
+      {/* How it works */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20" aria-labelledby="how-heading">
+        <h2 id="how-heading" className="text-2xl sm:text-3xl font-semibold text-halo-ink">
+          How Halo works
+        </h2>
+        <ol className="mt-8 grid gap-8 md:grid-cols-3">
+          {STEPS.map((s, i) => (
+            <li key={s.title} className="border-t border-halo-border-strong pt-5">
+              <span className="text-sm font-semibold text-halo-gold-ink tabular">Step {i + 1}</span>
+              <h3 className="mt-1 text-lg font-semibold text-halo-ink">{s.title}</h3>
+              <p className="mt-2 text-halo-text-muted leading-relaxed">{s.text}</p>
+            </li>
+          ))}
+        </ol>
       </section>
     </div>
   );

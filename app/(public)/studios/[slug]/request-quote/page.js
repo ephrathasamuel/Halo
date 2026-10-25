@@ -7,7 +7,9 @@ import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { submitEventRequest } from '@/lib/domain/events';
-import { formatETB } from '@/lib/format';
+import { formatMoney } from '@/lib/format';
+import { currencyOfProvider } from '@/lib/domain/providers';
+import { BackButton } from '@/components/ui/BackButton';
 
 const EVENT_TYPES = ['Wedding', 'Engagement', 'Corporate Event', 'Birthday', 'Music Video', 'Commercial', 'Conference', 'Other'];
 
@@ -15,7 +17,7 @@ export default function RequestQuotePage({ params }) {
   const resolvedParams = use(params);
   const { slug } = resolvedParams;
   const router = useRouter();
-  const { isSignedIn } = useSession();
+  const { isSignedIn, isLoaded } = useSession();
 
   const { data: providers } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
   const { data: listings } = useStorageSync(STORAGE_KEYS.LISTINGS, []);
@@ -49,13 +51,15 @@ export default function RequestQuotePage({ params }) {
     );
   }
 
+  // Wait for the stored session before showing the signed-out state
+  if (!isLoaded) return <div className="min-h-[50vh]" aria-busy="true" />;
+
   if (!isSignedIn) {
     return (
       <div className="max-w-xl mx-auto my-12 p-8 bg-white rounded-3xl border border-slate-200 shadow-sm text-center space-y-4">
-        <span className="text-4xl block">🔒</span>
         <h2 className="text-2xl font-bold text-slate-900">Sign in to request an event quote</h2>
         <p className="text-sm text-slate-600">
-          Sign in or create a demo renter account to contact {provider.name} for custom wedding and event filming quotes.
+          Sign in or create an account to ask {provider.name} for a wedding or event filming quote.
         </p>
         <Link
           href={`/signin?next=/studios/${slug}/request-quote`}
@@ -109,17 +113,12 @@ export default function RequestQuotePage({ params }) {
           </p>
         </div>
 
-        <Link
-          href={`/studios/${slug}`}
-          className="text-xs font-bold text-slate-600 hover:text-slate-900 min-h-[44px] flex items-center"
-        >
-          ← Back to Storefront
-        </Link>
+        <BackButton fallback={`/studios/${slug}`} />
       </div>
 
       {errorMsg && (
         <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
-          ⚠️ {errorMsg}
+          {errorMsg}
         </div>
       )}
 
@@ -138,7 +137,7 @@ export default function RequestQuotePage({ params }) {
             >
               {serviceListings.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.title} (Starting from {formatETB(s.startingFromHint)})
+                  {s.title} (Starting from {formatMoney(s.startingFromHint, currencyOfProvider(s.providerId))})
                 </option>
               ))}
             </select>

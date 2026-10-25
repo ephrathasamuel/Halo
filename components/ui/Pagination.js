@@ -1,5 +1,7 @@
 'use client';
 
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 /**
  * Accessible pagination control.
  * @param {{
@@ -27,21 +29,22 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
 
   return (
     <nav
-      className="flex items-center justify-center gap-1.5 py-6"
+      className="flex items-center justify-center gap-1.5 pt-12 pb-2"
       aria-label="Pagination navigation"
     >
       {/* Previous Button */}
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage <= 1}
-        className={`inline-flex items-center justify-center px-3.5 py-2 rounded-lg text-sm font-medium min-h-[44px] min-w-[44px] transition-colors ${
+        className={`inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium min-h-[44px] min-w-[44px] transition-colors ${
           currentPage <= 1
-            ? 'text-slate-300 cursor-not-allowed'
-            : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+            ? 'text-halo-border-strong cursor-not-allowed'
+            : 'text-halo-ink hover:bg-halo-ink/[0.05]'
         }`}
         aria-label="Go to previous page"
       >
-        ← Prev
+        <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+        <span className="hidden sm:inline">Previous</span>
       </button>
 
       {/* First Page button if truncated */}
@@ -49,12 +52,12 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
         <>
           <button
             onClick={() => onPageChange(1)}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 min-h-[44px] min-w-[44px]"
+            className="inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium text-halo-ink hover:bg-halo-ink/[0.05] min-h-[44px] min-w-[44px]"
             aria-label="Go to page 1"
           >
             1
           </button>
-          {startPage > 2 && <span className="px-1 text-slate-400 select-none">…</span>}
+          {startPage > 2 && <span className="px-1 text-halo-text-muted select-none">…</span>}
         </>
       )}
 
@@ -67,8 +70,8 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
             onClick={() => onPageChange(p)}
             className={`inline-flex items-center justify-center px-3.5 py-2 rounded-lg text-sm font-semibold min-h-[44px] min-w-[44px] transition-colors ${
               isCurrent
-                ? 'bg-halo-primary text-white shadow-sm'
-                : 'text-slate-700 hover:bg-slate-100'
+                ? 'bg-halo-ink text-white'
+                : 'text-halo-ink hover:bg-halo-ink/[0.05]'
             }`}
             aria-current={isCurrent ? 'page' : undefined}
             aria-label={`Page ${p}`}
@@ -81,10 +84,10 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
       {/* Last Page button if truncated */}
       {endPage < totalPages && (
         <>
-          {endPage < totalPages - 1 && <span className="px-1 text-slate-400 select-none">…</span>}
+          {endPage < totalPages - 1 && <span className="px-1 text-halo-text-muted select-none">…</span>}
           <button
             onClick={() => onPageChange(totalPages)}
-            className="inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-100 min-h-[44px] min-w-[44px]"
+            className="inline-flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium text-halo-ink hover:bg-halo-ink/[0.05] min-h-[44px] min-w-[44px]"
             aria-label={`Go to page ${totalPages}`}
           >
             {totalPages}
@@ -96,14 +99,15 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage >= totalPages}
-        className={`inline-flex items-center justify-center px-3.5 py-2 rounded-lg text-sm font-medium min-h-[44px] min-w-[44px] transition-colors ${
+        className={`inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-sm font-medium min-h-[44px] min-w-[44px] transition-colors ${
           currentPage >= totalPages
-            ? 'text-slate-300 cursor-not-allowed'
-            : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+            ? 'text-halo-border-strong cursor-not-allowed'
+            : 'text-halo-ink hover:bg-halo-ink/[0.05]'
         }`}
         aria-label="Go to next page"
       >
-        Next →
+        <span className="hidden sm:inline">Next</span>
+        <ChevronRight className="w-4 h-4" aria-hidden="true" />
       </button>
     </nav>
   );

@@ -2,7 +2,9 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatETB } from '@/lib/format';
+import { AlertCircle, Check, CheckCircle2, Plus } from 'lucide-react';
+import { formatMoney, formatPrice, formatTime } from '@/lib/format';
+import { providerLocation } from '@/lib/geo';
 import { calculateBookingPrice } from '@/lib/rules/pricing';
 import {
   checkStudioAvailability,
@@ -28,6 +30,7 @@ export function BookingPanel({ listing, provider }) {
   const { listings: allListings } = useListings({ publicOnly: true });
 
   const isStudio = listing.type === 'studio';
+  const { currency } = providerLocation(provider);
   const minHours = listing.minHours || 2;
 
   // Tomorrow's date as default
@@ -181,6 +184,7 @@ export function BookingPanel({ listing, provider }) {
       fee: pricing.fee,
       deposit: pricing.deposit,
       total: pricing.total,
+      currency,
       createdAt: new Date().toISOString(),
     };
 
@@ -193,19 +197,29 @@ export function BookingPanel({ listing, provider }) {
     router.push('/checkout');
   };
 
+  const fieldClass =
+    'w-full px-3 rounded-lg border border-halo-border-strong bg-white text-[15px] text-halo-ink focus:border-halo-ink focus:outline-none';
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-md space-y-6">
-      <div className="border-b border-slate-100 pb-4">
-        <h2 className="text-lg font-bold text-slate-900">Configure Reservation</h2>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Live conflict checking against studio calendar & opening hours
+    <div className="rounded-2xl border border-halo-border bg-white p-6 shadow-[0_8px_30px_rgba(22,24,29,0.08)] space-y-5">
+      <div>
+        <p className="text-halo-ink tabular">
+          <span className="text-2xl font-semibold">{formatPrice(listing.hourlyRate || 0, currency)}</span>
+          <span className="text-halo-text-muted"> per hour</span>
+        </p>
+        <p className="mt-0.5 text-sm text-halo-text-muted">
+          {isStudio ? `${minHours} hour minimum` : `${listing.quantity} available`}
         </p>
       </div>
 
-      {/* Date & Time Selectors */}
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="booking-date" className="block text-xs font-semibold text-slate-700 mb-1">
+      <p className="sr-only" aria-live="polite">
+        Booking from {formatTime(startTime)} to {formatTime(endTime)}
+      </p>
+
+      {/* Date and time */}
+      <div className="rounded-xl border border-halo-border-strong divide-y divide-halo-border-strong overflow-hidden">
+        <div className="px-3 pt-2">
+          <label htmlFor="booking-date" className="block text-xs font-semibold text-halo-ink">
             Date
           </label>
           <input
@@ -214,174 +228,164 @@ export function BookingPanel({ listing, provider }) {
             value={date}
             min={new Date().toISOString().slice(0, 10)}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-medium min-h-[44px]"
+            className="w-full bg-transparent text-[15px] text-halo-ink outline-none"
           />
         </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="booking-start" className="block text-xs font-semibold text-slate-700 mb-1">
-              Start Time
+        <div className="grid grid-cols-2 divide-x divide-halo-border-strong">
+          <div className="px-3 pt-2">
+            <label htmlFor="booking-start" className="block text-xs font-semibold text-halo-ink">
+              Start
             </label>
             <select
               id="booking-start"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm font-medium bg-white min-h-[44px]"
+              className="w-full bg-transparent text-[15px] text-halo-ink outline-none"
             >
               {['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'].map((t) => (
                 <option key={t} value={t}>
-                  {t}
+                  {formatTime(t)}
                 </option>
               ))}
             </select>
           </div>
-
-          <div>
-            <label htmlFor="booking-duration" className="block text-xs font-semibold text-slate-700 mb-1">
-              Duration
+          <div className="px-3 pt-2">
+            <label htmlFor="booking-duration" className="block text-xs font-semibold text-halo-ink">
+              Hours
             </label>
             <select
               id="booking-duration"
               value={hours}
               onChange={(e) => setHours(Number(e.target.value))}
-              className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm font-medium bg-white min-h-[44px]"
+              className="w-full bg-transparent text-[15px] text-halo-ink outline-none"
             >
               {[2, 3, 4, 5, 6, 8, 10, 12]
                 .filter((h) => h >= minHours)
                 .map((h) => (
                   <option key={h} value={h}>
-                    {h} hours ({startTime} - {minutesToTime(timeToMinutes(startTime) + h * 60)})
+                    {h} hours
                   </option>
                 ))}
             </select>
           </div>
         </div>
+      </div>
 
-        {/* Equipment quantity selector if equipment */}
-        {!isStudio && (
-          <div>
-            <label htmlFor="equipment-qty" className="block text-xs font-semibold text-slate-700 mb-1">
-              Quantity (Max available: {listing.quantity})
-            </label>
-            <input
-              id="equipment-qty"
-              type="number"
-              min="1"
-              max={listing.quantity}
-              value={equipmentQty}
-              onChange={(e) => setEquipmentQty(Math.max(1, Math.min(listing.quantity, Number(e.target.value))))}
-              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm font-medium min-h-[44px]"
-            />
-          </div>
-        )}
+      {!isStudio && (
+        <div>
+          <label htmlFor="equipment-qty" className="block text-sm font-medium text-halo-ink mb-1">
+            Quantity <span className="font-normal text-halo-text-muted">(up to {listing.quantity})</span>
+          </label>
+          <input
+            id="equipment-qty"
+            type="number"
+            inputMode="numeric"
+            min="1"
+            max={listing.quantity}
+            value={equipmentQty}
+            onChange={(e) => setEquipmentQty(Math.max(1, Math.min(listing.quantity, Number(e.target.value))))}
+            className={fieldClass}
+          />
+        </div>
+      )}
 
-        {/* Studio Equipment Add-ons */}
-        {isStudio && availableEquipmentAddOns.length > 0 && (
-          <div className="pt-2 border-t border-slate-100 space-y-2">
-            <span className="block text-xs font-semibold text-slate-700">
-              Optional Studio Equipment Add-ons
-            </span>
-            <div className="space-y-1.5">
-              {availableEquipmentAddOns.map((addon) => {
-                const count = selectedAddOns[addon.id] || 0;
-                return (
-                  <div
-                    key={addon.id}
-                    className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg text-xs"
-                  >
-                    <div>
-                      <span className="font-semibold text-slate-800">{addon.title}</span>
-                      <span className="text-slate-500 block">
-                        +{formatETB(addon.hourlyRate)}/hr • Deposit: {formatETB(addon.deposit)}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleAddOn(addon.id, addon.quantity)}
-                      className={`px-3 py-1.5 rounded-md font-semibold min-h-[36px] transition-colors ${
-                        count > 0
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {count > 0 ? `Added (${count})` : '+ Add'}
-                    </button>
+      {/* Equipment from the same provider, added to a studio booking */}
+      {isStudio && availableEquipmentAddOns.length > 0 && (
+        <div>
+          <p className="text-sm font-medium text-halo-ink mb-2">Add equipment</p>
+          <ul className="space-y-2">
+            {availableEquipmentAddOns.map((addon) => {
+              const count = selectedAddOns[addon.id] || 0;
+              return (
+                <li key={addon.id} className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-halo-ink truncate">{addon.title}</p>
+                    <p className="text-[13px] text-halo-text-muted tabular">
+                      {formatPrice(addon.hourlyRate, currency)} per hour, {formatPrice(addon.deposit || 0, currency)} deposit
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleAddOn(addon.id, addon.quantity)}
+                    aria-pressed={count > 0}
+                    aria-label={count > 0 ? `${addon.title}: ${count} added. Add one more or remove` : `Add ${addon.title}`}
+                    className={`shrink-0 inline-flex items-center gap-1 px-3 rounded-lg text-sm font-medium border min-h-[36px] transition-colors ${
+                      count > 0
+                        ? 'bg-halo-ink border-halo-ink text-white'
+                        : 'bg-white border-halo-border-strong text-halo-ink hover:border-halo-ink'
+                    }`}
+                  >
+                    {count > 0 ? (
+                      <>
+                        <Check className="w-4 h-4" aria-hidden="true" />
+                        {count}
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4" aria-hidden="true" />
+                        Add
+                      </>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
-      {/* Availability Status Alert */}
+      {/* Availability */}
       {!availability.available ? (
-        <div
-          className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-start gap-2"
-          role="alert"
-        >
-          <span className="text-base select-none">⚠️</span>
+        <p className="flex items-start gap-2 text-sm text-halo-error" role="alert">
+          <AlertCircle className="mt-0.5 w-4 h-4 shrink-0" aria-hidden="true" />
           <span>{availability.reason}</span>
-        </div>
+        </p>
       ) : (
-        <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-center gap-1.5">
-          <span>✓</span>
-          <span>Time slot is available with buffer and stock verified</span>
-        </div>
+        <p className="flex items-center gap-2 text-sm text-halo-success" role="status">
+          <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
+          Available at this time
+        </p>
       )}
 
-      {/* Form Error Alert */}
       {formError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700" role="alert">
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-halo-error" role="alert">
           {formError}
-        </div>
+        </p>
       )}
 
-      {/* Price Breakdown Calculation */}
-      <div className="bg-slate-50 rounded-xl p-4 space-y-2 text-xs border border-slate-100">
-        <div className="flex justify-between text-slate-600">
-          <span>Rental Subtotal ({hours} hrs)</span>
-          <span className="font-semibold text-slate-800">{formatETB(pricing.subtotal)}</span>
-        </div>
-
-        <div className="flex justify-between text-slate-600">
-          <span>Platform Fee (10%)</span>
-          <span className="font-semibold text-slate-800">{formatETB(pricing.fee)}</span>
-        </div>
-
-        {pricing.deposit > 0 && (
-          <div className="flex justify-between text-amber-700 pt-1 border-t border-slate-200/60 font-medium">
-            <span>Equipment Deposit (Refundable)</span>
-            <span className="font-bold">{formatETB(pricing.deposit)}</span>
-          </div>
-        )}
-
-        <div className="flex justify-between text-sm font-extrabold text-slate-900 pt-2 border-t border-slate-200">
-          <span>Total Demo Payable</span>
-          <span className="text-base">{formatETB(pricing.total)}</span>
-        </div>
-      </div>
-
-      {/* CTA Button */}
       <button
         type="button"
         onClick={handleProceedToCheckout}
         disabled={!availability.available}
-        className={`w-full inline-flex items-center justify-center px-6 py-3.5 rounded-xl font-bold text-white text-sm shadow-md transition-all min-h-[44px] ${
-          availability.available
-            ? 'hover:opacity-95 cursor-pointer shadow-lg'
-            : 'bg-slate-300 cursor-not-allowed'
-        }`}
-        style={availability.available ? { backgroundColor: provider?.brandColor || '#1E3A5F' } : undefined}
+        className="w-full rounded-xl bg-halo-ink py-3.5 text-[15px] font-semibold text-white hover:bg-halo-ink-soft disabled:bg-halo-border-strong disabled:text-halo-text-muted disabled:cursor-not-allowed min-h-[48px]"
       >
-        {!isSignedIn
-          ? 'Sign In to Book'
-          : 'Proceed to Demo Checkout →'}
+        {isSignedIn ? 'Continue to booking' : 'Sign in to book'}
       </button>
 
-      <p className="text-[11px] text-center text-slate-400">
-        Simulated TeleBirr checkout • Free cancellation until 24h prior
+      {/* Price breakdown */}
+      <dl className="space-y-2 text-[15px] tabular">
+        <div className="flex justify-between text-halo-text-muted">
+          <dt>Rental, {hours} hours</dt>
+          <dd className="text-halo-ink">{formatMoney(pricing.subtotal, currency)}</dd>
+        </div>
+        <div className="flex justify-between text-halo-text-muted">
+          <dt>Halo service fee</dt>
+          <dd className="text-halo-ink">{formatMoney(pricing.fee, currency)}</dd>
+        </div>
+        {pricing.deposit > 0 && (
+          <div className="flex justify-between text-halo-text-muted">
+            <dt>Refundable deposit</dt>
+            <dd className="text-halo-ink">{formatMoney(pricing.deposit, currency)}</dd>
+          </div>
+        )}
+        <div className="flex justify-between border-t border-halo-border pt-3 font-semibold text-halo-ink">
+          <dt>Total</dt>
+          <dd>{formatMoney(pricing.total, currency)}</dd>
+        </div>
+      </dl>
+
+      <p className="text-[13px] text-center text-halo-text-muted">
+        This sends a booking request. {provider?.name || 'The provider'} confirms it before it is final.
       </p>
     </div>
   );

@@ -8,12 +8,14 @@ import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { createReview } from '@/lib/domain/reviews';
 import { formatDate } from '@/lib/format';
+import { StarRating, StarRatingInput } from '@/components/ui/StarRating';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function BookingReviewPage({ params }) {
   const resolvedParams = use(params);
   const { id } = resolvedParams;
   const router = useRouter();
-  const { session, isSignedIn } = useSession();
+  const { session, isSignedIn, isLoaded } = useSession();
 
   const { data: bookings } = useStorageSync(STORAGE_KEYS.BOOKINGS, []);
   const { data: providers } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
@@ -28,11 +30,14 @@ export default function BookingReviewPage({ params }) {
   const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Wait for the stored session before showing the signed-out state
+  if (!isLoaded) return <div className="min-h-[50vh]" aria-busy="true" />;
+
   if (!isSignedIn) {
     return (
       <div className="max-w-xl mx-auto py-16 text-center space-y-4">
-        <h1 className="text-xl font-bold text-slate-800">Please sign in to leave a review</h1>
-        <Link href={`/signin?next=/bookings/${id}/review`} className="px-4 py-2 bg-halo-primary text-white rounded-xl">
+        <h1 className="text-xl font-semibold text-halo-ink">Please sign in to leave a review</h1>
+        <Link href={`/signin?next=/bookings/${id}/review`} className="px-4 py-2 bg-halo-ink text-white rounded-xl">
           Sign In
         </Link>
       </div>
@@ -42,10 +47,8 @@ export default function BookingReviewPage({ params }) {
   if (!booking) {
     return (
       <div className="max-w-xl mx-auto py-16 text-center space-y-4">
-        <h1 className="text-xl font-bold text-slate-800">Booking Not Found</h1>
-        <Link href="/dashboard" className="text-sm font-semibold text-halo-primary hover:underline">
-          Return to dashboard
-        </Link>
+        <h1 className="text-xl font-semibold text-halo-ink">Booking Not Found</h1>
+        <BackButton fallback="/dashboard" />
       </div>
     );
   }
@@ -57,7 +60,7 @@ export default function BookingReviewPage({ params }) {
     return (
       <div className="max-w-md mx-auto py-16 text-center space-y-4">
         <div className="p-6 bg-red-50 border border-red-200 rounded-2xl">
-          <h2 className="text-lg font-black text-red-700">Access Denied</h2>
+          <h2 className="text-lg font-semibold text-red-700">Access Denied</h2>
           <p className="text-xs text-red-600 mt-1">
             You can only review bookings made from your own account.
           </p>
@@ -70,35 +73,26 @@ export default function BookingReviewPage({ params }) {
   if (existingReview) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12 space-y-6">
-        <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-4">
+        <div className="bg-white rounded-2xl border border-halo-border p-8 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-              ✓ Review Submitted
+            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">Review Submitted
             </span>
-            <span className="text-xs text-slate-400">{formatDate(existingReview.createdAt?.slice(0, 10))}</span>
+            <span className="text-xs text-halo-text-muted">{formatDate(existingReview.createdAt?.slice(0, 10))}</span>
           </div>
 
-          <div className="flex items-center gap-1 text-amber-400 text-xl">
-            {'★'.repeat(existingReview.rating)}
-            {'☆'.repeat(5 - existingReview.rating)}
-          </div>
+          <StarRating rating={existingReview.rating} size="h-5 w-5" />
 
-          <p className="text-slate-800 text-sm leading-relaxed">&quot;{existingReview.comment}&quot;</p>
+          <p className="text-halo-ink text-sm leading-relaxed">&quot;{existingReview.comment}&quot;</p>
 
           {existingReview.ownerReply && (
-            <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
-              <p className="text-xs font-bold text-slate-700">Owner Response from {provider?.name}:</p>
-              <p className="text-xs text-slate-600">&quot;{existingReview.ownerReply}&quot;</p>
+            <div className="mt-4 p-4 rounded-2xl bg-stone-50 border border-halo-border space-y-1">
+              <p className="text-xs font-semibold text-stone-700">Owner Response from {provider?.name}:</p>
+              <p className="text-xs text-stone-600">&quot;{existingReview.ownerReply}&quot;</p>
             </div>
           )}
 
-          <div className="pt-4 border-t border-slate-100 flex justify-end">
-            <Link
-              href={`/bookings/${id}`}
-              className="text-xs font-bold text-halo-primary hover:underline min-h-[44px] flex items-center"
-            >
-              ← Back to Booking Receipt
-            </Link>
+          <div className="pt-4 border-t border-halo-border flex justify-end">
+            <BackButton fallback={`/bookings/${id}`} />
           </div>
         </div>
       </div>
@@ -110,12 +104,12 @@ export default function BookingReviewPage({ params }) {
     return (
       <div className="max-w-md mx-auto py-16 text-center space-y-4">
         <div className="p-6 bg-amber-50 border border-amber-200 rounded-2xl">
-          <h2 className="text-lg font-black text-amber-800">Cannot Review Yet</h2>
+          <h2 className="text-lg font-semibold text-amber-800">Cannot Review Yet</h2>
           <p className="text-xs text-amber-700 mt-1">
-            This booking is currently <span className="font-bold">{booking.status}</span>. You can submit a review once the shoot session has completed.
+            This booking is currently <span className="font-semibold">{booking.status}</span>. You can submit a review once the shoot session has completed.
           </p>
         </div>
-        <Link href={`/bookings/${id}`} className="text-xs font-bold text-halo-primary hover:underline">
+        <Link href={`/bookings/${id}`} className="text-xs font-semibold text-halo-ink hover:underline">
           View Booking Receipt
         </Link>
       </div>
@@ -146,45 +140,34 @@ export default function BookingReviewPage({ params }) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12 space-y-6">
-      <div className="pb-4 border-b border-slate-200">
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Leave a Review</h1>
-        <p className="text-xs text-slate-500 mt-1">
-          Share your experience with <span className="font-bold text-slate-800">{provider?.name}</span> for your session on {formatDate(booking.date)}.
+      <div className="pb-4 border-b border-halo-border">
+        <h1 className="text-2xl font-semibold text-halo-ink">Leave a Review</h1>
+        <p className="text-xs text-halo-text-muted mt-1">
+          Share your experience with <span className="font-semibold text-halo-ink">{provider?.name}</span> for your session on {formatDate(booking.date)}.
         </p>
       </div>
 
       {feedback.text && (
         <div
-          className={`p-4 rounded-xl text-sm font-medium border shadow-sm ${
+          className={`p-4 rounded-xl text-sm font-medium border ${
             feedback.type === 'error'
-              ? 'bg-red-50 text-red-700 border-red-200'
-              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
           }`}
         >
-          {feedback.type === 'error' ? '⚠️ ' : '✓ '}
           {feedback.text}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-halo-border p-6 md:p-8 space-y-6">
         {/* Star Rating Selector */}
         <div className="space-y-2">
-          <span className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+          <span className="block text-xs font-semibold text-stone-700">
             Overall Experience Rating *
           </span>
           <div className="flex items-center gap-2">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => setRating(star)}
-                className="text-3xl text-amber-400 hover:scale-125 transition min-h-[44px] min-w-[44px] flex items-center justify-center focus:outline-none"
-                aria-label={`${star} star rating`}
-              >
-                {star <= rating ? '★' : '☆'}
-              </button>
-            ))}
-            <span className="text-xs text-slate-500 font-bold ml-2">
+            <StarRatingInput value={rating} onChange={setRating} />
+            <span className="text-xs text-halo-text-muted font-semibold ml-2">
               {rating} of 5 Stars
             </span>
           </div>
@@ -192,7 +175,7 @@ export default function BookingReviewPage({ params }) {
 
         {/* Comment textarea */}
         <div className="space-y-1.5">
-          <label htmlFor="review-comment" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+          <label htmlFor="review-comment" className="block text-xs font-semibold text-stone-700">
             Your Review Feedback *
           </label>
           <textarea
@@ -202,14 +185,14 @@ export default function BookingReviewPage({ params }) {
             placeholder="Tell future creators about lighting quality, studio acoustic treatment, punctuality, and staff helpfulness..."
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-halo-primary"
+            className="w-full px-4 py-2.5 rounded-xl border border-halo-border text-sm focus:outline-none focus:ring-2 focus:ring-halo-primary"
           />
         </div>
 
-        <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+        <div className="pt-4 border-t border-halo-border flex items-center justify-between">
           <Link
             href={`/bookings/${id}`}
-            className="text-xs font-bold text-slate-600 hover:text-slate-900 min-h-[44px] flex items-center"
+            className="text-xs font-semibold text-stone-600 hover:text-halo-ink min-h-[44px] flex items-center"
           >
             Cancel
           </Link>
@@ -217,7 +200,7 @@ export default function BookingReviewPage({ params }) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-3 bg-halo-primary text-white font-bold rounded-xl hover:bg-halo-primary-light transition shadow disabled:opacity-50 min-h-[44px]"
+            className="px-6 py-3 bg-halo-ink text-white font-semibold rounded-xl hover:bg-halo-ink-soft transition disabled:opacity-50 min-h-[44px]"
           >
             {isSubmitting ? 'Submitting...' : 'Post Verified Review'}
           </button>

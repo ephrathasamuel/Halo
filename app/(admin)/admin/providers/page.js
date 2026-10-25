@@ -2,19 +2,16 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useStorageSync } from '@/hooks/useStorageSync';
+import { useScopedStorage } from '@/hooks/useAdminScope';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { moderateProvider } from '@/lib/domain/providers';
+import { STATUS_TONES, statusLabel } from '@/lib/status';
 
-const STATUS_BADGES = {
-  approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  suspended: 'bg-rose-50 text-rose-700 border-rose-200',
-};
+const STATUS_BADGES = STATUS_TONES;
 
 export default function AdminProvidersPage() {
-  const { data: providers, refresh } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
-  const { data: users } = useStorageSync(STORAGE_KEYS.USERS, []);
+  const { data: providers, refresh } = useScopedStorage(STORAGE_KEYS.PROVIDERS);
+  const { data: users } = useScopedStorage(STORAGE_KEYS.USERS);
   const userMap = new Map(users.map((u) => [u.id, u]));
 
   const [feedback, setFeedback] = useState({ type: '', text: '' });
@@ -35,30 +32,29 @@ export default function AdminProvidersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="pb-4 border-b border-slate-200">
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Provider Moderation</h1>
-        <p className="text-xs text-slate-500 mt-1">
+      <div className="pb-4 border-b border-halo-border">
+        <h1 className="text-2xl font-semibold text-halo-ink">Provider Moderation</h1>
+        <p className="text-xs text-halo-text-muted mt-1">
           Review creative provider applications, verify studio credentials, and manage suspensions.
         </p>
       </div>
 
       {feedback.text && (
         <div
-          className={`p-4 rounded-xl text-sm font-medium border shadow-sm ${
+          className={`p-4 rounded-xl text-sm font-medium border ${
             feedback.type === 'error'
-              ? 'bg-red-50 text-red-700 border-red-200'
-              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
           }`}
         >
-          {feedback.type === 'error' ? '⚠️ ' : '✓ '}
           {feedback.text}
         </div>
       )}
 
-      <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-2xl border border-halo-border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-700">
-            <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
+          <table className="w-full text-left text-sm text-stone-700">
+            <thead className="bg-stone-50 text-xs font-semibold text-halo-text-muted border-b border-halo-border">
               <tr>
                 <th scope="col" className="px-6 py-4">Provider</th>
                 <th scope="col" className="px-6 py-4">Owner / Contact</th>
@@ -67,41 +63,40 @@ export default function AdminProvidersPage() {
                 <th scope="col" className="px-6 py-4 text-right">Moderation Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-halo-border">
               {providers.map((p) => {
                 const owner = userMap.get(p.ownerId);
                 return (
-                  <tr key={p.id} className="hover:bg-slate-50 transition">
+                  <tr key={p.id} className="hover:bg-stone-50 transition">
                     <td className="px-6 py-4">
                       <div className="space-y-0.5">
                         <Link
                           href={`/studios/${p.slug}`}
                           target="_blank"
-                          className="font-bold text-slate-900 hover:text-halo-primary hover:underline"
+                          className="font-semibold text-halo-ink hover:text-halo-ink hover:underline"
                         >
-                          {p.name} ↗
-                        </Link>
-                        <p className="text-xs text-slate-400 line-clamp-1 max-w-xs">{p.tagline}</p>
+                          {p.name}</Link>
+                        <p className="text-xs text-halo-text-muted line-clamp-1 max-w-xs">{p.tagline}</p>
                       </div>
                     </td>
 
                     <td className="px-6 py-4 text-xs">
-                      <p className="font-bold text-slate-800">{owner?.name || 'Unknown'}</p>
-                      <p className="text-slate-500">{p.contact?.phone}</p>
-                      <p className="text-slate-400">{owner?.email}</p>
+                      <p className="font-semibold text-halo-ink">{owner?.name || 'Unknown'}</p>
+                      <p className="text-halo-text-muted">{p.contact?.phone}</p>
+                      <p className="text-halo-text-muted">{owner?.email}</p>
                     </td>
 
-                    <td className="px-6 py-4 text-xs text-slate-600">
+                    <td className="px-6 py-4 text-xs text-stone-600">
                       {p.neighbourhood}, {p.city}
                     </td>
 
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-block text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
-                          STATUS_BADGES[p.status] || 'bg-slate-100'
+                        className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                          STATUS_BADGES[p.status] || 'bg-stone-100'
                         }`}
                       >
-                        {p.status}
+                        {statusLabel(p.status)}
                       </span>
                     </td>
 
@@ -110,16 +105,15 @@ export default function AdminProvidersPage() {
                         {p.status !== 'approved' && (
                           <button
                             onClick={() => handleDecision(p.id, 'approved')}
-                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm min-h-[44px]"
-                          >
-                            ✓ Approve
+                            className="px-3 py-1.5 bg-halo-ink hover:bg-halo-ink-soft text-white rounded-xl text-xs font-semibold transition min-h-[44px]"
+                          >Approve
                           </button>
                         )}
 
                         {p.status !== 'suspended' && (
                           <button
                             onClick={() => handleDecision(p.id, 'suspended')}
-                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition min-h-[44px]"
+                            className="px-3 py-1.5 bg-white hover:bg-red-50 text-red-700 border border-red-200 rounded-xl text-xs font-semibold transition min-h-[44px]"
                           >
                             Suspend
                           </button>

@@ -11,7 +11,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { formatETB } from '@/lib/format';
+import { formatMoney } from '@/lib/format';
+import { currencyOfCurrentOwner } from '@/lib/domain/providers';
 
 export function OwnerEarningsChart({ data = [] }) {
   const [mounted, setMounted] = useState(false);
@@ -22,7 +23,7 @@ export function OwnerEarningsChart({ data = [] }) {
 
   if (!mounted || data.length === 0) {
     return (
-      <div className="h-64 flex items-center justify-center bg-slate-50 rounded-2xl text-slate-400 text-xs">
+      <div className="h-64 flex items-center justify-center bg-stone-50 rounded-2xl text-halo-text-muted text-xs">
         {data.length === 0 ? 'No financial revenue records yet' : 'Rendering chart...'}
       </div>
     );
@@ -41,10 +42,10 @@ export function OwnerEarningsChart({ data = [] }) {
           <YAxis
             tick={{ fill: '#64748b', fontSize: 11 }}
             tickLine={false}
-            tickFormatter={(val) => `ETB ${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
+            tickFormatter={(val) => `${currencyOfCurrentOwner()} ${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
           />
           <Tooltip
-            formatter={(value) => [formatETB(Number(value)), '']}
+            formatter={(value) => [formatMoney(Number(value), currencyOfCurrentOwner()), '']}
             contentStyle={{
               backgroundColor: '#1e293b',
               borderRadius: '0.75rem',

@@ -3,10 +3,11 @@
 import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { formatETB, formatDate } from '@/lib/format';
+import { formatMoney, formatDate } from '@/lib/format';
 import { exportCsv, downloadCsv } from '@/lib/csv';
 import { OwnerEarningsChart } from '@/components/charts/OwnerEarningsChart';
 import { EmptyState } from '@/components/states/EmptyState';
+import { currencyOfProvider, currencyOfCurrentOwner } from '@/lib/domain/providers';
 
 export default function OwnerEarningsPage() {
   const { session } = useSession();
@@ -75,10 +76,10 @@ export default function OwnerEarningsPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-halo-border">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Earnings & Financial Ledger</h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <h1 className="text-2xl font-semibold text-halo-ink">Earnings & Financial Ledger</h1>
+          <p className="text-xs text-halo-text-muted mt-1">
             Track gross subtotal bookings, platform commission (10%), and net provider payouts.
           </p>
         </div>
@@ -86,44 +87,44 @@ export default function OwnerEarningsPage() {
         <button
           onClick={handleExportCsv}
           disabled={eligibleBookings.length === 0}
-          className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm disabled:opacity-50 min-h-[44px]"
+          className="inline-flex items-center gap-1.5 px-4 py-2 border border-halo-border-strong rounded-xl text-xs font-semibold text-stone-700 bg-white hover:bg-stone-50 transition disabled:opacity-50 min-h-[44px]"
         >
-          <span>📥</span> Export Financial CSV
+          Export Financial CSV
         </button>
       </div>
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Net Owner Earnings</p>
-          <p className="text-2xl font-black text-slate-900">{formatETB(totalNetEarnings)}</p>
-          <p className="text-[11px] text-slate-400">90% of subtotal</p>
+        <div className="p-5 rounded-2xl bg-white border border-halo-border space-y-1">
+          <p className="text-xs font-semibold text-emerald-600">Net Owner Earnings</p>
+          <p className="text-2xl font-semibold text-halo-ink">{formatMoney(totalNetEarnings, currencyOfCurrentOwner())}</p>
+          <p className="text-[11px] text-halo-text-muted">90% of subtotal</p>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Gross Subtotal</p>
-          <p className="text-2xl font-black text-slate-900">{formatETB(totalSubtotal)}</p>
-          <p className="text-[11px] text-slate-400">All confirmed & completed sessions</p>
+        <div className="p-5 rounded-2xl bg-white border border-halo-border space-y-1">
+          <p className="text-xs font-semibold text-halo-text-muted">Gross Subtotal</p>
+          <p className="text-2xl font-semibold text-halo-ink">{formatMoney(totalSubtotal, currencyOfCurrentOwner())}</p>
+          <p className="text-[11px] text-halo-text-muted">All confirmed & completed sessions</p>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-amber-600">Platform Commission</p>
-          <p className="text-2xl font-black text-amber-700">{formatETB(totalPlatformFees)}</p>
-          <p className="text-[11px] text-slate-400">Mock 10% platform fee</p>
+        <div className="p-5 rounded-2xl bg-white border border-halo-border space-y-1">
+          <p className="text-xs font-semibold text-amber-600">Platform Commission</p>
+          <p className="text-2xl font-semibold text-amber-700">{formatMoney(totalPlatformFees, currencyOfCurrentOwner())}</p>
+          <p className="text-[11px] text-halo-text-muted">10% platform fee</p>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-600">Security Deposits</p>
-          <p className="text-2xl font-black text-blue-700">{formatETB(totalDeposits)}</p>
-          <p className="text-[11px] text-slate-400">Refundable equipment deposits</p>
+        <div className="p-5 rounded-2xl bg-white border border-halo-border space-y-1">
+          <p className="text-xs font-semibold text-blue-600">Security Deposits</p>
+          <p className="text-2xl font-semibold text-blue-700">{formatMoney(totalDeposits, currencyOfCurrentOwner())}</p>
+          <p className="text-[11px] text-halo-text-muted">Refundable equipment deposits</p>
         </div>
       </div>
 
       {/* Revenue Breakdown Chart */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm space-y-4">
+      <div className="bg-white rounded-2xl border border-halo-border p-6 md:p-8 space-y-4">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">Revenue Timeline</h2>
-          <p className="text-xs text-slate-500">
+          <h2 className="text-lg font-semibold text-halo-ink">Revenue Timeline</h2>
+          <p className="text-xs text-halo-text-muted">
             Daily net earnings alongside platform commission
           </p>
         </div>
@@ -132,19 +133,18 @@ export default function OwnerEarningsPage() {
       </div>
 
       {/* Accessible Financial Table */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
-        <h2 className="text-lg font-bold text-slate-900">Transaction Breakdown</h2>
+      <div className="bg-white rounded-2xl border border-halo-border overflow-hidden space-y-4 p-6">
+        <h2 className="text-lg font-semibold text-halo-ink">Transaction Breakdown</h2>
 
         {eligibleBookings.length === 0 ? (
           <EmptyState
             title="No confirmed bookings yet"
             message="As your studio sessions complete, line items will appear in this ledger."
-            icon="💳"
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
+            <table className="w-full text-left text-sm text-stone-700">
+              <thead className="bg-stone-50 text-xs font-semibold text-halo-text-muted border-b border-halo-border">
                 <tr>
                   <th scope="col" className="px-4 py-3">Booking ID</th>
                   <th scope="col" className="px-4 py-3">Date</th>
@@ -155,22 +155,22 @@ export default function OwnerEarningsPage() {
                   <th scope="col" className="px-4 py-3">Deposit</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-halo-border">
                 {eligibleBookings.map((b) => (
-                  <tr key={b.id} className="hover:bg-slate-50 transition">
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">#{b.id.slice(0, 8)}</td>
+                  <tr key={b.id} className="hover:bg-stone-50 transition">
+                    <td className="px-4 py-3 font-mono text-xs text-halo-text-muted">#{b.id.slice(-6)}</td>
                     <td className="px-4 py-3">{formatDate(b.date)}</td>
                     <td className="px-4 py-3">
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100">
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-stone-100">
                         {b.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-900">{formatETB(b.subtotal)}</td>
-                    <td className="px-4 py-3 text-amber-600 font-medium">-{formatETB(b.fee)}</td>
-                    <td className="px-4 py-3 font-black text-emerald-700">
-                      {formatETB((b.subtotal || 0) - (b.fee || 0))}
+                    <td className="px-4 py-3 font-medium text-halo-ink">{formatMoney(b.subtotal, currencyOfProvider(b.providerId))}</td>
+                    <td className="px-4 py-3 text-amber-600 font-medium">-{formatMoney(b.fee, currencyOfProvider(b.providerId))}</td>
+                    <td className="px-4 py-3 font-semibold text-emerald-700">
+                      {formatMoney((b.subtotal || 0) - (b.fee || 0), currencyOfProvider(b.providerId))}
                     </td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{formatETB(b.deposit)}</td>
+                    <td className="px-4 py-3 text-xs text-halo-text-muted">{formatMoney(b.deposit, currencyOfProvider(b.providerId))}</td>
                   </tr>
                 ))}
               </tbody>

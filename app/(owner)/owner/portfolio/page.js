@@ -1,5 +1,7 @@
 'use client';
 
+import { X } from 'lucide-react';
+
 import { useState } from 'react';
 import Link from 'next/link';
 import { useSession } from '@/hooks/useSession';
@@ -85,7 +87,7 @@ export default function OwnerPortfolioPage() {
 
   if (!provider) {
     return (
-      <div className="py-12 text-center text-slate-500">
+      <div className="py-12 text-center text-halo-text-muted">
         No provider storefront found linked to your account.
       </div>
     );
@@ -94,10 +96,10 @@ export default function OwnerPortfolioPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-halo-border">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Portfolio & Showcase Gallery</h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <h1 className="text-2xl font-semibold text-halo-ink">Portfolio & Showcase Gallery</h1>
+          <p className="text-xs text-halo-text-muted mt-1">
             Highlight your best productions, weddings, editorial photography, and video coverage.
           </p>
         </div>
@@ -106,28 +108,26 @@ export default function OwnerPortfolioPage() {
           <Link
             href={`/studios/${provider.slug}/portfolio`}
             target="_blank"
-            className="px-4 py-2 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 transition min-h-[44px] flex items-center gap-1.5"
+            className="px-4 py-2 border border-halo-border-strong rounded-xl text-xs font-semibold text-stone-700 bg-white hover:bg-stone-50 transition min-h-[44px] flex items-center gap-1.5"
           >
-            <span>🌐</span> Public Gallery ↗
-          </Link>
+            Public Gallery</Link>
           <button
             onClick={handleOpenAdd}
-            className="px-4 py-2 bg-halo-primary text-white rounded-xl text-xs font-bold hover:bg-halo-primary-light transition shadow min-h-[44px] flex items-center gap-1.5"
+            className="px-4 py-2 bg-halo-ink text-white rounded-xl text-xs font-semibold hover:bg-halo-ink-soft transition min-h-[44px] flex items-center gap-1.5"
           >
-            <span>➕</span> Add Item
+            Add Item
           </button>
         </div>
       </div>
 
       {statusMessage.text && (
         <div
-          className={`p-4 rounded-xl text-sm font-medium border shadow-sm ${
+          className={`p-4 rounded-xl text-sm font-medium border ${
             statusMessage.type === 'error'
-              ? 'bg-red-50 text-red-700 border-red-200'
-              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
           }`}
         >
-          {statusMessage.type === 'error' ? '⚠️ ' : '✓ '}
           {statusMessage.text}
         </div>
       )}
@@ -137,40 +137,39 @@ export default function OwnerPortfolioPage() {
         <EmptyState
           title="No portfolio items yet"
           message="Upload visual examples of your work to attract renters and event inquiries."
-          icon="🖼️"
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {myItems.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between group"
+              className="bg-white rounded-2xl border border-halo-border overflow-hidden hover: transition flex flex-col justify-between group"
             >
               <div>
-                <div className="relative aspect-video bg-slate-100 overflow-hidden">
+                <div className="relative aspect-video bg-stone-100 overflow-hidden">
                   <SafeImage
                     src={item.mediaUrl}
                     alt={item.title}
-                    fallbackCategory="portfolio"
+                    fallbackType="portfolio"
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                   />
-                  <span className="absolute top-3 left-3 px-2.5 py-1 bg-black/70 backdrop-blur-sm text-white text-[11px] font-bold uppercase rounded-lg">
+                  <span className="absolute top-3 left-3 px-2.5 py-1 bg-black/70 backdrop-blur-sm text-white text-[11px] font-semibold rounded-lg">
                     {item.eventType}
                   </span>
                 </div>
 
                 <div className="p-4 space-y-1">
-                  <h3 className="font-bold text-slate-900 text-sm">{item.title}</h3>
-                  <p className="text-[11px] text-slate-400 font-mono">
-                    ID: #{item.id.slice(0, 8)}
+                  <h3 className="font-semibold text-halo-ink text-sm">{item.title}</h3>
+                  <p className="text-[11px] text-halo-text-muted font-mono">
+                    ID: #{item.id.slice(-6)}
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 pt-0 border-t border-slate-100 flex items-center justify-between gap-2 mt-2">
+              <div className="p-4 pt-0 border-t border-halo-border flex items-center justify-between gap-2 mt-2">
                 <button
                   onClick={() => handleOpenEdit(item)}
-                  className="text-xs font-semibold text-slate-700 hover:text-halo-primary min-h-[44px] px-2 flex items-center"
+                  className="text-xs font-semibold text-stone-700 hover:text-halo-ink min-h-[44px] px-2 flex items-center"
                 >
                   Edit Item
                 </button>
@@ -189,22 +188,23 @@ export default function OwnerPortfolioPage() {
       {/* Add / Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl border border-slate-200 max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h2 className="text-lg font-black text-slate-900">
+          <div className="bg-white rounded-2xl border border-halo-border max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-halo-border">
+              <h2 className="text-lg font-semibold text-halo-ink">
                 {editingItem ? 'Edit Portfolio Item' : 'Add New Portfolio Item'}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 min-h-[44px] min-w-[44px] flex items-center justify-center text-lg"
+                className="text-halo-text-muted hover:text-stone-600 min-h-[44px] min-w-[44px] flex items-center justify-center text-lg"
+                aria-label="Close"
               >
-                ✕
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 
             <form onSubmit={handleSave} className="space-y-4">
               <div className="space-y-1.5">
-                <label htmlFor="item-title" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                <label htmlFor="item-title" className="block text-xs font-semibold text-stone-700">
                   Item Title *
                 </label>
                 <input
@@ -214,19 +214,19 @@ export default function OwnerPortfolioPage() {
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="e.g. Traditional Wedding Highlights"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
+                  className="w-full px-4 py-2.5 rounded-xl border border-halo-border text-sm focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="event-type" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                <label htmlFor="event-type" className="block text-xs font-semibold text-stone-700">
                   Event / Category *
                 </label>
                 <select
                   id="event-type"
                   value={formData.eventType}
                   onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
+                  className="w-full px-4 py-2.5 rounded-xl border border-halo-border text-sm focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
                 >
                   {EVENT_TYPES.map((type) => (
                     <option key={type} value={type}>{type}</option>
@@ -235,8 +235,8 @@ export default function OwnerPortfolioPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="media-url" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                  Media Image URL (Demo Path) *
+                <label htmlFor="media-url" className="block text-xs font-semibold text-stone-700">
+                  Image URL *
                 </label>
                 <input
                   id="media-url"
@@ -245,21 +245,21 @@ export default function OwnerPortfolioPage() {
                   value={formData.mediaUrl}
                   onChange={(e) => setFormData({ ...formData, mediaUrl: e.target.value })}
                   placeholder="/images/portfolio/b-light-wedding-1.jpg"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-mono text-xs focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
+                  className="w-full px-4 py-2.5 rounded-xl border border-halo-border text-sm font-mono text-xs focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
                 />
               </div>
 
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-halo-border">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 min-h-[44px]"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold border border-halo-border text-stone-600 hover:bg-stone-50 min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-halo-primary text-white hover:bg-halo-primary-light transition min-h-[44px]"
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-halo-ink text-white hover:bg-halo-ink-soft transition min-h-[44px]"
                 >
                   {editingItem ? 'Save Changes' : 'Create Item'}
                 </button>

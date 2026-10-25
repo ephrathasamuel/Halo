@@ -1,30 +1,67 @@
+import Link from 'next/link';
+
+const COLUMNS = [
+  {
+    title: 'Book',
+    links: [
+      { href: '/browse?type=studio', label: 'Studios' },
+      { href: '/browse?type=equipment', label: 'Equipment' },
+      { href: '/browse?type=service', label: 'Event filming' },
+      { href: '/studios', label: 'All providers' },
+    ],
+  },
+  {
+    title: 'Providers',
+    links: [
+      { href: '/signup?as=provider', label: 'List your space or gear' },
+      { href: '/owner', label: 'Provider dashboard' },
+    ],
+  },
+  {
+    title: 'Account',
+    links: [
+      { href: '/signin', label: 'Sign in' },
+      { href: '/dashboard', label: 'My bookings' },
+    ],
+  },
+];
+
 /**
- * Main application footer with branding, quick navigation links, and capstone info.
+ * Site footer.
  */
 export function Footer() {
   return (
-    <footer className="bg-halo-primary text-white/70 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div>
-            <h3 className="text-lg font-bold text-halo-secondary mb-2">Halo</h3>
-            <p className="text-sm">Your marketplace for studio rental, equipment rental, and event filming in Addis Ababa.</p>
+    <footer className="mt-auto border-t border-halo-border bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+          <div className="col-span-2">
+            <p className="text-[1.15rem] font-semibold tracking-[0.14em] text-halo-ink">HALO</p>
+            <p className="mt-3 text-sm text-halo-text-muted max-w-xs leading-relaxed">
+              Book photo and film studios, rent production gear, and hire event filming crews from
+              independent providers near you.
+            </p>
           </div>
-          <div>
-            <h4 className="font-semibold text-white mb-2">Quick Links</h4>
-            <ul className="space-y-1 text-sm">
-              <li><a href="/browse" className="hover:text-white transition-colors">Browse Listings</a></li>
-              <li><a href="/studios" className="hover:text-white transition-colors">Studios</a></li>
-              <li><a href="/signin" className="hover:text-white transition-colors">Sign In</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold text-white mb-2">About</h4>
-            <p className="text-sm">A capstone project for the IBT-QIYAS Full-Stack Software Development Program. This is a demo application.</p>
-          </div>
+          {COLUMNS.map((col) => (
+            <div key={col.title}>
+              <h2 className="text-sm font-semibold text-halo-ink mb-3">{col.title}</h2>
+              <ul className="space-y-1">
+                {col.links.map((l) => (
+                  <li key={l.href}>
+                    <Link
+                      href={l.href}
+                      className="text-sm text-halo-text-muted hover:text-halo-ink min-h-[36px] inline-flex items-center"
+                    >
+                      {l.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
-        <div className="mt-8 pt-4 border-t border-white/10 text-center text-sm">
-          <p>&copy; {new Date().getFullYear()} Halo Marketplace. Demo application — not for production use.</p>
+        <div className="mt-10 pt-6 border-t border-halo-border flex flex-col sm:flex-row gap-2 justify-between text-xs text-halo-text-muted">
+          <p>&copy; {new Date().getFullYear()} Halo. Book the space. Make the work.</p>
+          <p>Every price is set by the provider, in their own currency.</p>
         </div>
       </div>
     </footer>

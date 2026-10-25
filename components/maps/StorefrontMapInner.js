@@ -4,12 +4,12 @@ import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix default Leaflet icon paths in bundlers
+// Fix default Leaflet icon paths in bundlers (copies served from public/images)
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconRetinaUrl: '/images/marker-icon-2x.png',
+  iconUrl: '/images/marker-icon.png',
+  shadowUrl: '/images/marker-shadow.png',
 });
 
 /**
@@ -50,7 +50,12 @@ export default function StorefrontMapInner({
     }).addTo(map);
 
     const marker = L.marker([lat, lng]).addTo(map);
-    marker.bindPopup(`<strong>${title}</strong><br/>${neighbourhood}, Addis Ababa`).openPopup();
+    // Built from DOM nodes, not an HTML string: provider names are user input
+    const popup = document.createElement('div');
+    const name = document.createElement('strong');
+    name.textContent = title;
+    popup.append(name, document.createElement('br'), `${neighbourhood}, Addis Ababa`);
+    marker.bindPopup(popup).openPopup();
 
     mapInstanceRef.current = map;
 
@@ -63,7 +68,7 @@ export default function StorefrontMapInner({
   return (
     <div
       ref={containerRef}
-      className="w-full h-full min-h-[260px] rounded-lg overflow-hidden border border-slate-200 z-0"
+      className="w-full h-full min-h-[260px] rounded-xl overflow-hidden border border-halo-border z-0"
       aria-label={`Interactive map showing location of ${title}`}
       role="application"
     />

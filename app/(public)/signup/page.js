@@ -1,154 +1,198 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { signUp } from '@/lib/domain/auth';
+import { signUp, signUpProvider } from '@/lib/domain/auth';
 import { safeReturnPath } from '@/lib/safeReturnPath';
+import { COUNTRIES, citiesOf, regionsOf } from '@/lib/geo';
+import { useCountry } from '@/hooks/useCountry';
+import { AuthCard, authInputClass } from '@/components/ui/AuthCard';
+import { Select } from '@/components/ui/Select';
+
+const ACCOUNT_FIELDS = [
+  { key: 'name', label: 'Full name', type: 'text', autoComplete: 'name' },
+  { key: 'email', label: 'Email', type: 'email', autoComplete: 'email' },
+  { key: 'phone', label: 'Phone number', type: 'tel', autoComplete: 'tel', placeholder: 'With country code, e.g. +251' },
+];
+
+const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
+
+const selectButton =
+  'min-h-[48px] px-3.5 rounded-xl border border-halo-border-strong bg-halo-surface text-[15px] hover:border-halo-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-gold';
+
+function TextField({ id, label, value, onChange, ...rest }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-halo-ink mb-1.5">
+        {label}
+      </label>
+      <input id={id} type="text" value={value} onChange={(e) => onChange(e.target.value)} required className={authInputClass} {...rest} />
+    </div>
+  );
+}
 
 function SignUpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextParam = searchParams.get('next');
   const returnPath = safeReturnPath(nextParam);
+  const { country: browsingCountry } = useCountry();
 
-  const [formData, setFormData] = useState({
+  const [accountType, setAccountType] = useState(searchParams.get('as') === 'provider' ? 'provider' : 'renter');
+  const [form, setForm] = useState({
     name: '',
     email: '',
     phone: '',
+    country: '',
+    businessName: '',
+    region: '',
+    city: '',
+    neighbourhood: '',
   });
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Start from the country the visitor is browsing
+  useEffect(() => {
+    if (browsingCountry && !form.country) setForm((f) => ({ ...f, country: browsingCountry }));
+  }, [browsingCountry, form.country]);
+
+  const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
+  const isProvider = accountType === 'provider';
+  const regions = form.country ? regionsOf(form.country) : [];
+  const cities = form.country && form.region ? citiesOf(form.country, form.region) : [];
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setErrorMessage('');
     setIsSubmitting(true);
-
-    const res = signUp(formData);
+    const res = isProvider ? signUpProvider(form) : signUp(form);
     setIsSubmitting(false);
 
     if (!res.ok) {
       setErrorMessage(res.error || 'Failed to create account');
       return;
     }
-
-    router.push(returnPath);
+    router.push(isProvider ? '/owner' : returnPath);
     router.refresh();
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-12 space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-          Create Demo Renter Account
-        </h1>
-        <p className="text-sm text-slate-500">
-          Sign up to book studios, reserve cinema gear, and request production quotes in Addis Ababa.
-        </p>
+    <AuthCard
+      title={isProvider ? 'List on Halo' : 'Create your account'}
+      subtitle={
+        isProvider
+          ? 'Studios, rental houses and film crews from any country Halo serves can join. Your storefront goes live once your country team approves it.'
+          : 'Book studios, rent gear and request filming quotes near you.'
+      }
+      error={errorMessage}
+      footer={
+        <>
+          Already have an account?{' '}
+          <Link
+            href={nextParam ? `/signin?next=${encodeURIComponent(nextParam)}` : '/signin'}
+            className="font-semibold text-halo-ink underline underline-offset-2 min-h-0 min-w-0"
+          >
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      {/* Account type */}
+      <div className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-halo-ink/[0.05] p-1" role="radiogroup" aria-label="Account type">
+        {[
+          { value: 'renter', label: 'I want to book' },
+          { value: 'provider', label: 'I want to list' },
+        ].map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            role="radio"
+            aria-checked={accountType === t.value}
+            onClick={() => setAccountType(t.value)}
+            className={`rounded-lg text-sm font-semibold min-h-[40px] transition-colors ${
+              accountType === t.value ? 'bg-halo-surface text-halo-ink shadow-sm' : 'text-halo-text-muted hover:text-halo-ink'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Error alert */}
-      {errorMessage && (
-        <div
-          className="p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 flex items-start gap-2.5"
-          role="alert"
-        >
-          <span className="text-base select-none">⚠️</span>
-          <div className="space-y-1">
-            <span className="font-bold block">Registration Error</span>
-            <span>{errorMessage}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Sign Up Form */}
-      <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <div>
-          <label htmlFor="signup-name" className="block text-xs font-semibold text-slate-700 mb-1">
-            Full Name *
-          </label>
-          <input
-            id="signup-name"
-            type="text"
-            required
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="e.g. Almaz Bekele"
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm min-h-[44px]"
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {ACCOUNT_FIELDS.map((f) => (
+          <TextField
+            key={f.key}
+            id={`signup-${f.key}`}
+            label={f.label}
+            type={f.type}
+            autoComplete={f.autoComplete}
+            placeholder={f.placeholder}
+            value={form[f.key]}
+            onChange={set(f.key)}
           />
-        </div>
+        ))}
 
-        <div>
-          <label htmlFor="signup-email" className="block text-xs font-semibold text-slate-700 mb-1">
-            Email Address *
-          </label>
-          <input
-            id="signup-email"
-            type="email"
-            required
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            placeholder="e.g. almaz@example.com"
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm min-h-[44px]"
-          />
-        </div>
+        <Select
+          label="Country"
+          value={form.country}
+          onChange={(v) => setForm((f) => ({ ...f, country: v, region: '', city: '' }))}
+          options={COUNTRY_OPTIONS}
+          buttonClassName={selectButton}
+        />
 
-        <div>
-          <label htmlFor="signup-phone" className="block text-xs font-semibold text-slate-700 mb-1">
-            Phone Number *
-          </label>
-          <input
-            id="signup-phone"
-            type="tel"
-            required
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            placeholder="e.g. +251 911 234567"
-            className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-sm min-h-[44px]"
-          />
-        </div>
-
-        <div className="bg-slate-50 p-3 rounded-lg text-xs text-slate-500 border border-slate-100">
-          <p>
-            ℹ️ <strong>Renter Account:</strong> Public sign-up creates a demo renter account. Studio
-            owner privileges or administrative moderation require pre-seeded credentials.
-          </p>
-        </div>
+        {isProvider && (
+          <>
+            <div className="pt-2 border-t border-halo-border" />
+            <TextField
+              id="signup-business"
+              label="Business name"
+              placeholder="As customers will see it"
+              value={form.businessName}
+              onChange={set('businessName')}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Select
+                label="Region"
+                value={form.region}
+                onChange={(v) => setForm((f) => ({ ...f, region: v, city: '' }))}
+                options={[{ value: '', label: 'Choose' }, ...regions.map((r) => ({ value: r, label: r }))]}
+                buttonClassName={selectButton}
+              />
+              <Select
+                label="City"
+                value={form.city}
+                onChange={set('city')}
+                options={[{ value: '', label: form.region ? 'Choose' : 'Region first' }, ...cities.map((c) => ({ value: c, label: c }))]}
+                buttonClassName={selectButton}
+              />
+            </div>
+            <TextField
+              id="signup-area"
+              label="Neighbourhood or area"
+              placeholder="e.g. Bole, Westlands, Lekki"
+              value={form.neighbourhood}
+              onChange={set('neighbourhood')}
+            />
+          </>
+        )}
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full inline-flex items-center justify-center px-4 py-3 bg-halo-primary hover:bg-halo-primary-light text-white font-bold text-sm rounded-xl transition-colors min-h-[44px]"
+          className="w-full rounded-xl bg-halo-ink py-3 text-[15px] font-semibold text-white hover:bg-halo-ink-soft disabled:opacity-60 min-h-[48px]"
         >
-          {isSubmitting ? 'Creating Account...' : 'Complete Sign Up'}
+          {isSubmitting ? 'Creating account' : isProvider ? 'Create provider account' : 'Create account'}
         </button>
       </form>
-
-      {/* Sign in redirect */}
-      <p className="text-center text-sm text-slate-500">
-        Already have a demo account?{' '}
-        <Link
-          href={nextParam ? `/signin?next=${encodeURIComponent(nextParam)}` : '/signin'}
-          className="font-bold text-halo-primary hover:underline min-h-[44px] inline-flex items-center"
-        >
-          Sign In
-        </Link>
-      </p>
-    </div>
+    </AuthCard>
   );
 }
 
 export default function SignUpPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="max-w-md mx-auto px-4 py-16 text-center text-slate-500">
-          Loading registration...
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="min-h-[60vh]" aria-busy="true" />}>
       <SignUpContent />
     </Suspense>
   );

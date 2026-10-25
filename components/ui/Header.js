@@ -1,19 +1,39 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Menu, X } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { signOut } from '@/lib/domain/auth';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { Logo } from '@/components/ui/Logo';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { CountryPicker } from '@/components/ui/CountryPicker';
+import { UserAvatar } from '@/components/ui/ProviderLogo';
+
+const SLOGAN = 'Book the space. Make the work.';
+
+// Categories live on Home and Browse as buttons; the header stays short
+const PRIMARY_LINKS = [
+  { href: '/browse', label: 'Browse' },
+  { href: '/studios', label: 'Providers' },
+  { href: '/signup?as=provider', label: 'List your space' },
+];
 
 /**
- * Main application header with brand logo, primary navigation links,
- * authentication controls, and responsive mobile menu.
+ * Site header: logo, category navigation, and account controls.
+ * White with a hairline border so listing photos carry the colour on every page.
  */
 export function Header() {
   const { session, isSignedIn } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Close the phone menu whenever the route changes
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   const handleSignOut = () => {
     signOut();
@@ -22,89 +42,152 @@ export function Header() {
   };
 
   const isOwner = session?.roles?.includes('owner');
-  const isAdmin = session?.roles?.includes('admin');
+  const isAdmin = session?.roles?.includes('admin') || session?.roles?.includes('regional_admin');
+
+  const accountLinks = isSignedIn
+    ? [
+        { href: '/dashboard', label: 'My bookings' },
+        ...(isOwner ? [{ href: '/owner', label: 'Provider dashboard' }] : []),
+        ...(isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
+      ]
+    : [];
+
+  const linkClass = (href) => {
+    const base = href.split('?')[0];
+    const active = pathname === base && !href.includes('?');
+    return `px-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors min-h-[40px] flex items-center ${
+      active ? 'text-halo-ink' : 'text-halo-text-muted hover:text-halo-ink hover:bg-halo-ink/[0.04]'
+    }`;
+  };
 
   return (
-    <header className="bg-halo-primary text-white shadow-md">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-halo-border">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" aria-label="Main navigation">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 min-h-[44px] min-w-[44px]">
-            <span className="text-2xl font-bold text-halo-secondary">Halo</span>
-          </Link>
+        <div className="flex items-center justify-between h-16 gap-4">
+          <div className="flex items-center gap-4 shrink-0">
+            <Link href="/" className="flex items-center min-h-[44px]" aria-label="Halo home">
+              <Logo />
+            </Link>
+            <p className="hidden xl:flex items-center gap-4 text-sm text-halo-text-muted">
+              <span className="h-5 w-px bg-halo-border-strong" aria-hidden="true" />
+              {SLOGAN}
+            </p>
+          </div>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link href="/browse" className="hover:text-halo-secondary transition-colors min-h-[44px] flex items-center">
-              Browse
-            </Link>
-            <Link href="/studios" className="hover:text-halo-secondary transition-colors min-h-[44px] flex items-center">
-              Studios
-            </Link>
+          {/* Desktop navigation */}
+          <div className="hidden lg:flex items-center gap-0.5">
+            {PRIMARY_LINKS.map((l) => (
+              <Link key={l.href} href={l.href} className={linkClass(l.href)}>
+                {l.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="hidden lg:flex items-center gap-1">
+            <CountryPicker />
+            <ThemeToggle />
             {isSignedIn ? (
               <>
-                <Link href="/dashboard" className="hover:text-halo-secondary transition-colors min-h-[44px] flex items-center">
-                  Dashboard
+                {accountLinks.map((l) => (
+                  <Link key={l.href} href={l.href} className={linkClass(l.href)}>
+                    {l.label}
+                  </Link>
+                ))}
+                <span className="mx-2 h-6 w-px bg-halo-border" aria-hidden="true" />
+                <Link
+                  href="/account"
+                  className="rounded-full min-h-0 min-w-0"
+                  title={`${session.name}, edit profile`}
+                  aria-label={`Signed in as ${session.name}. Edit profile`}
+                >
+                  <UserAvatar user={session} size={36} />
                 </Link>
-                {isOwner && (
-                  <Link href="/owner" className="hover:text-halo-secondary transition-colors min-h-[44px] flex items-center">
-                    Owner
-                  </Link>
-                )}
-                {isAdmin && (
-                  <Link href="/admin" className="hover:text-halo-secondary transition-colors min-h-[44px] flex items-center">
-                    Admin
-                  </Link>
-                )}
-                <span className="text-sm text-halo-accent">{session.name}</span>
                 <button
                   onClick={handleSignOut}
-                  className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md text-sm transition-colors min-h-[44px]"
+                  className="px-3 rounded-lg text-sm font-medium whitespace-nowrap text-halo-text-muted hover:text-halo-ink hover:bg-halo-ink/[0.04] min-h-[40px]"
                 >
-                  Sign Out
+                  Sign out
                 </button>
               </>
             ) : (
-              <Link
-                href="/signin"
-                className="bg-halo-secondary text-halo-primary px-4 py-2 rounded-md font-semibold hover:bg-halo-accent transition-colors min-h-[44px] flex items-center"
-              >
-                Sign In
-              </Link>
+              <>
+                <Link href="/signin" className={linkClass('/signin')}>
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="ml-1 px-4 rounded-lg bg-halo-ink text-white text-sm font-semibold whitespace-nowrap hover:bg-halo-ink-soft transition-colors min-h-[40px] flex items-center"
+                >
+                  Create account
+                </Link>
+              </>
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            className="md:hidden min-h-[44px] min-w-[44px] flex items-center justify-center"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-expanded={mobileMenuOpen}
-            aria-label="Toggle navigation menu"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {mobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
+          {/* Phone: theme switch and menu button */}
+          <div className="lg:hidden ml-auto -mr-2 flex items-center">
+            <ThemeToggle />
+            <button
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-halo-ink hover:bg-halo-ink/[0.04]"
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
 
-        {/* Mobile menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden pb-4 space-y-2">
-            <Link href="/browse" className="block py-2 hover:text-halo-secondary min-h-[44px] flex items-center" onClick={() => setMobileMenuOpen(false)}>Browse</Link>
-            <Link href="/studios" className="block py-2 hover:text-halo-secondary min-h-[44px] flex items-center" onClick={() => setMobileMenuOpen(false)}>Studios</Link>
+          <div id="mobile-menu" className="lg:hidden border-t border-halo-border py-3 space-y-1">
+            {PRIMARY_LINKS.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="flex items-center px-2 min-h-[44px] rounded-lg text-[15px] font-medium text-halo-ink hover:bg-halo-ink/[0.04]"
+              >
+                {l.label}
+              </Link>
+            ))}
+            <div className="flex items-center justify-between px-2 min-h-[44px]">
+              <span className="text-[15px] text-halo-text-muted">Country</span>
+              <CountryPicker />
+            </div>
+            <div className="my-2 h-px bg-halo-border" />
             {isSignedIn ? (
               <>
-                <Link href="/dashboard" className="block py-2 hover:text-halo-secondary min-h-[44px] flex items-center" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
-                {isOwner && <Link href="/owner" className="block py-2 hover:text-halo-secondary min-h-[44px] flex items-center" onClick={() => setMobileMenuOpen(false)}>Owner</Link>}
-                {isAdmin && <Link href="/admin" className="block py-2 hover:text-halo-secondary min-h-[44px] flex items-center" onClick={() => setMobileMenuOpen(false)}>Admin</Link>}
-                <button onClick={() => { handleSignOut(); setMobileMenuOpen(false); }} className="block py-2 text-red-300 hover:text-red-100 min-h-[44px]">Sign Out</button>
+                {accountLinks.map((l) => (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className="flex items-center px-2 min-h-[44px] rounded-lg text-[15px] font-medium text-halo-ink hover:bg-halo-ink/[0.04]"
+                  >
+                    {l.label}
+                  </Link>
+                ))}
+                <button
+                  onClick={handleSignOut}
+                  className="w-full text-left flex items-center px-2 min-h-[44px] rounded-lg text-[15px] font-medium text-halo-error hover:bg-red-50"
+                >
+                  Sign out
+                </button>
               </>
             ) : (
-              <Link href="/signin" className="block py-2 text-halo-secondary font-semibold min-h-[44px] flex items-center" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Link
+                  href="/signin"
+                  className="flex items-center justify-center min-h-[44px] rounded-lg border border-halo-border-strong text-sm font-semibold text-halo-ink"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/signup"
+                  className="flex items-center justify-center min-h-[44px] rounded-lg bg-halo-ink text-sm font-semibold text-white"
+                >
+                  Create account
+                </Link>
+              </div>
             )}
           </div>
         )}

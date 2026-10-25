@@ -5,23 +5,17 @@ import Link from 'next/link';
 import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { formatETB, formatDate, formatTime } from '@/lib/format';
+import { formatMoney, formatDate, formatTime } from '@/lib/format';
 import { exportCsv, downloadCsv } from '@/lib/csv';
 import { EmptyState } from '@/components/states/EmptyState';
+import { STATUS_TONES, statusLabel } from '@/lib/status';
+import { currencyOfProvider } from '@/lib/domain/providers';
+import { BackButton } from '@/components/ui/BackButton';
 
-const STATUS_COLORS = {
-  requested: 'bg-amber-100 text-amber-800 border-amber-300',
-  confirmed: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-  in_progress: 'bg-blue-100 text-blue-800 border-blue-300',
-  completed: 'bg-purple-100 text-purple-800 border-purple-300',
-  declined: 'bg-slate-100 text-slate-800 border-slate-300',
-  cancelled: 'bg-red-100 text-red-800 border-red-300',
-  reviewed: 'bg-teal-100 text-teal-800 border-teal-300',
-  disputed: 'bg-rose-100 text-rose-800 border-rose-300',
-};
+const STATUS_COLORS = STATUS_TONES;
 
 export default function CustomerBookingsPage() {
-  const { session, isSignedIn } = useSession();
+  const { session, isSignedIn, isLoaded } = useSession();
   const { data: bookings } = useStorageSync(STORAGE_KEYS.BOOKINGS, []);
   const { data: providers } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
 
@@ -29,13 +23,16 @@ export default function CustomerBookingsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 8;
 
+  // Wait for the stored session before showing the signed-out state
+  if (!isLoaded) return <div className="min-h-[50vh]" aria-busy="true" />;
+
   if (!isSignedIn) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
-        <h1 className="text-2xl font-bold text-slate-900">Sign in to view your bookings</h1>
+        <h1 className="text-2xl font-semibold text-halo-ink">Sign in to view your bookings</h1>
         <Link
           href="/signin?next=/bookings"
-          className="inline-flex items-center px-6 py-3 bg-halo-primary text-white font-semibold rounded-xl hover:bg-halo-primary-light transition min-h-[44px]"
+          className="inline-flex items-center px-6 py-3 bg-halo-ink text-white font-semibold rounded-xl hover:bg-halo-ink-soft transition min-h-[44px]"
         >
           Sign In
         </Link>
@@ -95,34 +92,29 @@ export default function CustomerBookingsPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Booking History</h1>
-          <p className="text-sm text-slate-500 mt-1">Review your past and upcoming rental reservations</p>
+          <h1 className="text-3xl font-semibold text-halo-ink">Booking History</h1>
+          <p className="text-sm text-halo-text-muted mt-1">Review your past and upcoming rental reservations</p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={handleExportCsv}
             disabled={filtered.length === 0}
-            className="px-4 py-2 border border-slate-300 rounded-xl text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm disabled:opacity-50 min-h-[44px]"
+            className="px-4 py-2 border border-halo-border-strong rounded-xl text-sm font-medium text-stone-700 bg-white hover:bg-stone-50 transition disabled:opacity-50 min-h-[44px]"
           >
-            📥 Export CSV ({filtered.length})
+            Export CSV ({filtered.length})
           </button>
-          <Link
-            href="/dashboard"
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-sm font-medium transition min-h-[44px] flex items-center"
-          >
-            ← Back to Dashboard
-          </Link>
+          <BackButton fallback="/dashboard" />
         </div>
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+      <div className="bg-white p-4 rounded-2xl border border-halo-border flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <label htmlFor="status-filter" className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <label htmlFor="status-filter" className="text-xs font-semibold text-halo-text-muted">
             Filter Status:
           </label>
           <select
@@ -132,7 +124,7 @@ export default function CustomerBookingsPage() {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
+            className="px-3 py-2 bg-stone-50 border border-halo-border rounded-xl text-sm font-medium text-halo-ink focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
           >
             <option value="all">All Statuses ({myBookings.length})</option>
             <option value="requested">Requested</option>
@@ -146,8 +138,8 @@ export default function CustomerBookingsPage() {
           </select>
         </div>
 
-        <p className="text-xs text-slate-500">
-          Showing <span className="font-bold text-slate-900">{filtered.length}</span> record{filtered.length !== 1 ? 's' : ''}
+        <p className="text-xs text-halo-text-muted">
+          Showing <span className="font-semibold text-halo-ink">{filtered.length}</span> record{filtered.length !== 1 ? 's' : ''}
         </p>
       </div>
 
@@ -156,13 +148,12 @@ export default function CustomerBookingsPage() {
         <EmptyState
           title="No bookings found"
           message="You have no bookings matching the selected criteria."
-          icon="📋"
         />
       ) : (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-halo-border rounded-2xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
+            <table className="w-full text-left text-sm text-stone-700">
+              <thead className="bg-stone-50 text-xs font-semibold text-halo-text-muted border-b border-halo-border">
                 <tr>
                   <th scope="col" className="px-6 py-4">Booking Ref</th>
                   <th scope="col" className="px-6 py-4">Studio / Provider</th>
@@ -172,48 +163,47 @@ export default function CustomerBookingsPage() {
                   <th scope="col" className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-halo-border">
                 {paginated.map((b) => {
                   const provider = providerMap.get(b.providerId);
                   return (
-                    <tr key={b.id} className="hover:bg-slate-50/80 transition">
-                      <td className="px-6 py-4 font-mono text-xs text-slate-500">
-                        #{b.id.slice(0, 8)}
+                    <tr key={b.id} className="hover:bg-stone-50/80 transition">
+                      <td className="px-6 py-4 font-mono text-xs text-halo-text-muted">
+                        #{b.id.slice(-6)}
                       </td>
-                      <td className="px-6 py-4 font-semibold text-slate-900">
+                      <td className="px-6 py-4 font-semibold text-halo-ink">
                         {provider ? provider.name : 'Unknown Studio'}
-                        <p className="text-xs font-normal text-slate-400">
+                        <p className="text-xs font-normal text-halo-text-muted">
                           {provider?.neighbourhood}
                         </p>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="font-medium text-slate-900">{formatDate(b.date)}</p>
-                        <p className="text-xs text-slate-500">
-                          {formatTime(b.startTime)} — {formatTime(b.endTime)} ({b.hours}h)
+                        <p className="font-medium text-halo-ink">{formatDate(b.date)}</p>
+                        <p className="text-xs text-halo-text-muted">
+                          {formatTime(b.startTime)} to {formatTime(b.endTime)} ({b.hours}h)
                         </p>
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-block text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
-                            STATUS_COLORS[b.status] || 'bg-slate-100 text-slate-700'
+                          className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                            STATUS_COLORS[b.status] || 'bg-stone-100 text-stone-700'
                           }`}
                         >
-                          {b.status.replace('_', ' ')}
+                          {statusLabel(b.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 font-bold text-slate-900">
-                        {formatETB(b.total)}
-                        <p className="text-[11px] font-normal text-slate-400">
-                          {b.paymentStatus === 'paid' ? '✓ Paid' : 'Pending'}
+                      <td className="px-6 py-4 font-semibold text-halo-ink">
+                        {formatMoney(b.total, currencyOfProvider(b.providerId))}
+                        <p className="text-[11px] font-normal text-halo-text-muted">
+                          {b.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
                         </p>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Link
                           href={`/bookings/${b.id}`}
-                          className="inline-flex items-center text-xs font-semibold text-halo-primary hover:text-halo-primary-light hover:underline min-h-[44px]"
+                          className="inline-flex items-center text-xs font-semibold text-halo-ink hover:text-halo-ink-soft hover:underline min-h-[44px]"
                         >
-                          View Receipt →
-                        </Link>
+                          View Receipt</Link>
                       </td>
                     </tr>
                   );
@@ -224,7 +214,7 @@ export default function CustomerBookingsPage() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="p-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+            <div className="p-4 border-t border-halo-border flex items-center justify-between text-xs text-stone-600">
               <span>
                 Page {currentPage} of {totalPages}
               </span>
@@ -232,14 +222,14 @@ export default function CustomerBookingsPage() {
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 min-h-[44px]"
+                  className="px-3 py-1.5 rounded-lg border border-halo-border bg-white hover:bg-stone-50 disabled:opacity-50 min-h-[44px]"
                 >
                   Previous
                 </button>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-50 min-h-[44px]"
+                  className="px-3 py-1.5 rounded-lg border border-halo-border bg-white hover:bg-stone-50 disabled:opacity-50 min-h-[44px]"
                 >
                   Next
                 </button>

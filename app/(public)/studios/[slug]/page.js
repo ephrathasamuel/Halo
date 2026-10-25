@@ -11,16 +11,16 @@ export async function generateMetadata({ params }) {
 
   if (!provider) {
     return {
-      title: 'Studio Not Found | Halo',
+      title: 'Studio not found',
       description: 'The requested studio or equipment provider does not exist.',
     };
   }
 
   return {
-    title: `${provider.name} — Creative Studio in ${provider.neighbourhood} | Halo`,
+    title: `${provider.name}, ${provider.neighbourhood}`,
     description: provider.about?.slice(0, 160) || provider.tagline,
     openGraph: {
-      title: `${provider.name} | Halo Marketplace`,
+      title: provider.name,
       description: provider.tagline,
       images: [provider.cover || '/images/providers/b-light-cover.jpg'],
     },

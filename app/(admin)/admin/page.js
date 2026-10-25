@@ -1,149 +1,173 @@
 'use client';
 
 import Link from 'next/link';
-import { useStorageSync } from '@/hooks/useStorageSync';
+import { ChevronRight } from 'lucide-react';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { formatETB } from '@/lib/format';
+import { formatPrice } from '@/lib/format';
+import { COUNTRIES, providerLocation } from '@/lib/geo';
+import { useAdminScope, useScopedStorage } from '@/hooks/useAdminScope';
+import { PageHeader, Panel, StatCard } from '@/components/dashboard/DashboardUI';
+
+const REVENUE_STATUSES = ['confirmed', 'in_progress', 'completed', 'reviewed'];
+
+/**
+ * Per-country summary for global admins, in each country's own currency.
+ * @param {{ providers: object[], users: object[], bookings: object[], disputes: object[] }} props
+ */
+function CountryTable({ providers, users, bookings, disputes }) {
+  const providerCountry = new Map(providers.map((p) => [p.id, providerLocation(p).country]));
+  const bookingCountry = new Map(bookings.map((b) => [b.id, providerCountry.get(b.providerId)]));
+
+  const rows = COUNTRIES.map((c) => {
+    const cProviders = providers.filter((p) => providerLocation(p).country === c.code);
+    const cBookings = bookings.filter((b) => providerCountry.get(b.providerId) === c.code);
+    const revenue = cBookings.filter((b) => REVENUE_STATUSES.includes(b.status));
+    return {
+      ...c,
+      providers: cProviders.filter((p) => p.status === 'approved').length,
+      pending: cProviders.filter((p) => p.status === 'pending').length,
+      customers: users.filter((u) => (u.country || 'ET') === c.code && u.roles?.includes('renter')).length,
+      admins: users.filter((u) => u.roles?.includes('regional_admin') && u.adminScope?.country === c.code).length,
+      disputes: disputes.filter((d) => d.status === 'open' && bookingCountry.get(d.targetId) === c.code).length,
+      bookings: cBookings.length,
+      fees: revenue.reduce((sum, b) => sum + (b.fee || 0), 0),
+    };
+  }).filter((r) => r.providers || r.pending || r.customers || r.admins);
+
+  return (
+    <Panel
+      title="Countries"
+      description="Each country in its own currency."
+      action={
+        <Link href="/admin/team" className="text-sm font-semibold text-halo-ink hover:underline min-h-0">
+          Regional admins
+        </Link>
+      }
+      flush
+    >
+      <div className="overflow-x-auto border-t border-halo-border">
+        <table className="w-full text-left text-sm tabular">
+          <thead className="text-halo-text-muted">
+            <tr className="border-b border-halo-border">
+              <th scope="col" className="px-5 sm:px-6 py-3 font-medium">Country</th>
+              <th scope="col" className="px-4 py-3 font-medium">Live providers</th>
+              <th scope="col" className="px-4 py-3 font-medium">Waiting approval</th>
+              <th scope="col" className="px-4 py-3 font-medium">Customers</th>
+              <th scope="col" className="px-4 py-3 font-medium">Bookings</th>
+              <th scope="col" className="px-4 py-3 font-medium">Halo fees</th>
+              <th scope="col" className="px-4 py-3 font-medium">Open disputes</th>
+              <th scope="col" className="px-4 py-3 font-medium">Regional admins</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-halo-border text-halo-ink">
+            {rows.map((r) => (
+              <tr key={r.code}>
+                <td className="px-5 sm:px-6 py-3 font-medium">{r.name}</td>
+                <td className="px-4 py-3">{r.providers}</td>
+                <td className={`px-4 py-3 ${r.pending ? 'font-semibold text-amber-700' : ''}`}>{r.pending}</td>
+                <td className="px-4 py-3">{r.customers}</td>
+                <td className="px-4 py-3">{r.bookings}</td>
+                <td className="px-4 py-3">{formatPrice(r.fees, r.currency)}</td>
+                <td className={`px-4 py-3 ${r.disputes ? 'font-semibold text-red-700' : ''}`}>{r.disputes}</td>
+                <td className={`px-4 py-3 ${r.admins ? '' : 'text-amber-700'}`}>{r.admins || 'None yet'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  );
+}
 
 export default function AdminDashboardPage() {
-  const { data: providers } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
-  const { data: listings } = useStorageSync(STORAGE_KEYS.LISTINGS, []);
-  const { data: users } = useStorageSync(STORAGE_KEYS.USERS, []);
-  const { data: bookings } = useStorageSync(STORAGE_KEYS.BOOKINGS, []);
-  const { data: disputes } = useStorageSync(STORAGE_KEYS.DISPUTES, []);
+  const { isGlobal, label } = useAdminScope();
+  const { data: providers } = useScopedStorage(STORAGE_KEYS.PROVIDERS);
+  const { data: listings } = useScopedStorage(STORAGE_KEYS.LISTINGS);
+  const { data: users } = useScopedStorage(STORAGE_KEYS.USERS);
+  const { data: bookings } = useScopedStorage(STORAGE_KEYS.BOOKINGS);
+  const { data: disputes } = useScopedStorage(STORAGE_KEYS.DISPUTES);
 
-  // Financial aggregates
-  const paidBookings = bookings.filter((b) => b.paymentStatus === 'paid');
-  const totalGMV = paidBookings.reduce((sum, b) => sum + (b.total || 0), 0);
-  const totalPlatformFees = paidBookings.reduce((sum, b) => sum + (b.fee || 0), 0);
-
-  // Status counters
+  const providerMap = new Map(providers.map((p) => [p.id, p]));
   const pendingProviders = providers.filter((p) => p.status === 'pending');
   const pendingListings = listings.filter((l) => l.status === 'pending');
   const openDisputes = disputes.filter((d) => d.status === 'open');
   const suspendedUsers = users.filter((u) => u.status === 'suspended');
 
+  // Fees per currency: amounts in different currencies are never added together
+  const feesByCurrency = bookings
+    .filter((b) => REVENUE_STATUSES.includes(b.status))
+    .reduce((acc, b) => {
+      const c = b.currency || providerLocation(providerMap.get(b.providerId)).currency;
+      acc[c] = (acc[c] || 0) + (b.fee || 0);
+      return acc;
+    }, {});
+  const feeLines = Object.entries(feesByCurrency);
+
+  const queue = [
+    { href: '/admin/providers', label: 'Storefronts waiting for approval', count: pendingProviders.length },
+    { href: '/admin/listings', label: 'Listings waiting for review', count: pendingListings.length },
+    { href: '/admin/disputes', label: 'Open disputes', count: openDisputes.length },
+  ];
+  const queueTotal = queue.reduce((sum, q) => sum + q.count, 0);
+
   return (
     <div className="space-y-8">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Platform Administration</h1>
-            <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200">
-              Admin Only
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Global marketplace governance, storefront approvals, dispute resolution, and commission audits.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={isGlobal ? 'Overview' : `${label} overview`}
+        description={
+          isGlobal
+            ? 'Every country on Halo. Regional admins handle approvals and disputes in their own country.'
+            : `Approvals, customers and disputes in ${label}.`
+        }
+      />
 
-      {/* Actionable Governance Alerts */}
-      {(pendingProviders.length > 0 || pendingListings.length > 0 || openDisputes.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {pendingProviders.length > 0 && (
-            <Link
-              href="/admin/providers"
-              className="p-5 rounded-2xl bg-amber-50 border border-amber-200 hover:border-amber-300 transition shadow-sm space-y-1 block"
-            >
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
-                ⚠️ Provider Approvals Pending
-              </span>
-              <p className="text-2xl font-black text-amber-900">{pendingProviders.length}</p>
-              <p className="text-xs text-amber-700">Review storefront applications →</p>
-            </Link>
-          )}
+      <Panel
+        title="Needs your attention"
+        description={queueTotal ? `${queueTotal} ${queueTotal === 1 ? 'item' : 'items'} waiting` : 'Nothing waiting.'}
+        flush
+      >
+        <ul className="divide-y divide-halo-border border-t border-halo-border">
+          {queue.map((q) => (
+            <li key={q.href}>
+              <Link
+                href={q.href}
+                className="flex items-center justify-between gap-4 px-5 sm:px-6 py-3.5 hover:bg-halo-ink/[0.02] min-h-[52px]"
+              >
+                <span className="text-halo-ink">{q.label}</span>
+                <span className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex min-w-7 justify-center rounded-full px-2 py-0.5 text-sm font-semibold tabular ${
+                      q.count ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-halo-text-muted'
+                    }`}
+                  >
+                    {q.count}
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-halo-text-muted" aria-hidden="true" />
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Panel>
 
-          {pendingListings.length > 0 && (
-            <Link
-              href="/admin/listings"
-              className="p-5 rounded-2xl bg-blue-50 border border-blue-200 hover:border-blue-300 transition shadow-sm space-y-1 block"
-            >
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-800">
-                📦 Listings Pending Review
-              </span>
-              <p className="text-2xl font-black text-blue-900">{pendingListings.length}</p>
-              <p className="text-xs text-blue-700">Inspect studio and gear listings →</p>
-            </Link>
-          )}
-
-          {openDisputes.length > 0 && (
-            <Link
-              href="/admin/disputes"
-              className="p-5 rounded-2xl bg-rose-50 border border-rose-200 hover:border-rose-300 transition shadow-sm space-y-1 block"
-            >
-              <span className="text-xs font-bold uppercase tracking-wider text-rose-800">
-                ⚖️ Open Incident Disputes
-              </span>
-              <p className="text-2xl font-black text-rose-900">{openDisputes.length}</p>
-              <p className="text-xs text-rose-700">Resolve claims & mediation →</p>
-            </Link>
-          )}
-        </div>
-      )}
-
-      {/* Global Financial & Operating Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Platform GMV</p>
-          <p className="text-2xl font-black text-slate-900">{formatETB(totalGMV)}</p>
-          <p className="text-[11px] text-slate-400">Total gross rental volume</p>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Platform Commission</p>
-          <p className="text-2xl font-black text-emerald-700">{formatETB(totalPlatformFees)}</p>
-          <p className="text-[11px] text-slate-400">10% commission on subtotal</p>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Registered Providers</p>
-          <p className="text-2xl font-black text-slate-900">{providers.length}</p>
-          <p className="text-[11px] text-slate-400">
-            {providers.filter((p) => p.status === 'approved').length} approved • {pendingProviders.length} pending
-          </p>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">User Accounts</p>
-          <p className="text-2xl font-black text-slate-900">{users.length}</p>
-          <p className="text-[11px] text-slate-400">
-            {users.filter((u) => u.status === 'active').length} active • {suspendedUsers.length} suspended
-          </p>
-        </div>
-      </div>
-
-      {/* Quick Navigation Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Link
-          href="/admin/providers"
-          className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 shadow-sm transition space-y-2 group"
-        >
-          <span className="text-2xl group-hover:scale-110 transition inline-block">🏢</span>
-          <h3 className="font-bold text-slate-900">Provider Moderation</h3>
-          <p className="text-xs text-slate-500">Approve new studio storefronts or suspend non-compliant providers.</p>
-        </Link>
-
-        <Link
-          href="/admin/listings"
-          className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 shadow-sm transition space-y-2 group"
-        >
-          <span className="text-2xl group-hover:scale-110 transition inline-block">📋</span>
-          <h3 className="font-bold text-slate-900">Listing Moderation</h3>
-          <p className="text-xs text-slate-500">Approve or reject studio rooms, equipment packages, and filming services.</p>
-        </Link>
-
-        <Link
+        <StatCard
+          label="Halo fees"
+          value={feeLines.length ? feeLines.map(([c, v]) => formatPrice(v, c)).join(' / ') : formatPrice(0)}
+          hint="10% of rental subtotals"
           href="/admin/reports"
-          className="p-5 rounded-2xl bg-white border border-slate-200 hover:border-slate-300 shadow-sm transition space-y-2 group"
-        >
-          <span className="text-2xl group-hover:scale-110 transition inline-block">📊</span>
-          <h3 className="font-bold text-slate-900">Commission & Financial Reports</h3>
-          <p className="text-xs text-slate-500">Audit platform revenue, calculate owner earnings, and export CSV reports.</p>
-        </Link>
+        />
+        <StatCard label="Bookings" value={bookings.length} hint="All statuses" href="/admin/bookings" />
+        <StatCard
+          label="Providers"
+          value={providers.length}
+          hint={`${providers.filter((p) => p.status === 'approved').length} live, ${pendingProviders.length} waiting`}
+          href="/admin/providers"
+        />
+        <StatCard label="Users" value={users.length} hint={`${suspendedUsers.length} suspended`} href="/admin/users" />
       </div>
+
+      {isGlobal && <CountryTable providers={providers} users={users} bookings={bookings} disputes={disputes} />}
     </div>
   );
 }

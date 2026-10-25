@@ -4,18 +4,24 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
 import { getBookingById, cancelBooking } from '@/lib/domain/bookings';
-import { formatETB, formatDate, formatTime } from '@/lib/format';
+import { formatMoney, formatDate, formatTime } from '@/lib/format';
 import { useSession } from '@/hooks/useSession';
 import { readStorage } from '@/lib/storage/readStorage';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { EmptyState } from '@/components/states/EmptyState';
+import { STATUS_TONES, statusLabel } from '@/lib/status';
+import { currencyOfProvider } from '@/lib/domain/providers';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function BookingDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { session, isSignedIn } = useSession();
+  const { session, isSignedIn, isLoaded } = useSession();
   const [actionError, setActionError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Wait for the stored session before showing the signed-out state
+  if (!isLoaded) return <div className="min-h-[50vh]" aria-busy="true" />;
 
   if (!isSignedIn) {
     return (
@@ -23,11 +29,10 @@ export default function BookingDetailPage() {
         <EmptyState
           title="Sign In Required"
           message="Please sign in to view your reservation receipt."
-          icon="🔐"
         />
         <Link
           href={`/signin?next=/bookings/${id}`}
-          className="inline-flex items-center justify-center px-6 py-2.5 bg-halo-primary text-white rounded-xl text-sm font-bold min-h-[44px]"
+          className="inline-flex items-center justify-center px-6 py-2.5 bg-halo-ink text-white rounded-xl text-sm font-semibold min-h-[44px]"
         >
           Sign In
         </Link>
@@ -41,15 +46,14 @@ export default function BookingDetailPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-4">
         <div className="p-8 bg-red-50 border border-red-200 rounded-2xl max-w-md mx-auto space-y-2">
-          <span className="text-4xl select-none">🚫</span>
-          <h1 className="text-xl font-bold text-red-900">Access Denied</h1>
+          <h1 className="text-xl font-semibold text-red-900">Access Denied</h1>
           <p className="text-sm text-red-700">
             This booking either does not exist or you do not have permission to view it.
           </p>
         </div>
         <Link
           href="/dashboard"
-          className="inline-flex items-center justify-center px-4 py-2 bg-halo-primary text-white rounded-lg text-sm font-semibold min-h-[44px]"
+          className="inline-flex items-center justify-center px-4 py-2 bg-halo-ink text-white rounded-lg text-sm font-semibold min-h-[44px]"
         >
           Return to Dashboard
         </Link>
@@ -78,59 +82,51 @@ export default function BookingDetailPage() {
     router.refresh();
   };
 
-  const statusColors = {
-    requested: 'bg-amber-100 text-amber-800 border-amber-300',
-    confirmed: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-    in_progress: 'bg-blue-100 text-blue-800 border-blue-300',
-    completed: 'bg-purple-100 text-purple-800 border-purple-300',
-    cancelled: 'bg-slate-100 text-slate-700 border-slate-300',
-    declined: 'bg-red-100 text-red-800 border-red-300',
-    reviewed: 'bg-teal-100 text-teal-800 border-teal-300',
-    disputed: 'bg-rose-100 text-rose-800 border-rose-300',
-  };
+  const statusColors = STATUS_TONES;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="max-w-3xl mx-auto space-y-8">
+      <BackButton fallback="/bookings" />
       {/* Breadcrumb Navigation */}
-      <nav aria-label="Breadcrumb" className="text-xs text-slate-500 flex items-center gap-2">
-        <Link href="/dashboard" className="hover:text-slate-800">
+      <nav aria-label="Breadcrumb" className="text-xs text-halo-text-muted flex items-center gap-2">
+        <Link href="/dashboard" className="hover:text-halo-ink">
           Dashboard
         </Link>
         <span>/</span>
-        <span className="text-slate-800 font-semibold truncate">
-          Receipt #{booking.id.slice(0, 8)}
+        <span className="text-halo-ink font-semibold truncate">
+          Receipt #{booking.id.slice(-6)}
         </span>
       </nav>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-halo-border pb-6">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-semibold text-halo-ink">
               Booking Receipt
             </h1>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold capitalize border ${
-                statusColors[booking.status] || 'bg-slate-100 text-slate-700'
+              className={`px-3 py-1 rounded-full text-xs font-semibold capitalize border ${
+                statusColors[booking.status] || 'bg-stone-100 text-stone-700'
               }`}
             >
-              {booking.status.replace('_', ' ')}
+              {statusLabel(booking.status)}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1 font-mono">Ref: {booking.id}</p>
+          <p className="text-xs text-halo-text-muted mt-1 font-mono">Ref: {booking.id}</p>
         </div>
 
         <div className="text-right">
-          <span className="text-xs text-slate-400 block font-semibold uppercase">
+          <span className="text-xs text-halo-text-muted block font-semibold">
             Payment Status
           </span>
           <span
-            className={`inline-block font-bold text-xs uppercase px-2 py-0.5 rounded mt-0.5 ${
+            className={`inline-block font-semibold text-xs px-2 py-0.5 rounded mt-0.5 ${
               booking.paymentStatus === 'paid'
-                ? 'bg-emerald-50 text-emerald-700'
-                : booking.paymentStatus === 'refunded'
-                ? 'bg-slate-100 text-slate-600'
-                : 'bg-amber-50 text-amber-700'
+              ? 'bg-emerald-50 text-emerald-700'
+              : booking.paymentStatus === 'refunded'
+              ? 'bg-stone-100 text-stone-600'
+              : 'bg-amber-50 text-amber-700'
             }`}
           >
             ● {booking.paymentStatus}
@@ -157,49 +153,48 @@ export default function BookingDetailPage() {
       )}
 
       {/* Receipt Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+      <div className="bg-white rounded-2xl border border-halo-border p-6 sm:p-8 space-y-6">
         {/* Studio & Provider Strip */}
         {provider && (
-          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+          <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl border border-halo-border">
             <div>
-              <span className="text-xs text-slate-400 uppercase font-semibold">Studio Provider</span>
-              <h2 className="text-base font-bold text-slate-900">
+              <span className="text-xs text-halo-text-muted font-semibold">Studio Provider</span>
+              <h2 className="text-base font-semibold text-halo-ink">
                 <Link href={`/studios/${provider.slug}`} className="hover:underline">
                   {provider.name}
                 </Link>
               </h2>
-              <p className="text-xs text-slate-500">
-                📍 {provider.neighbourhood}, Addis Ababa • 📞 {provider.contact?.phone}
+              <p className="text-xs text-halo-text-muted">
+                {provider.neighbourhood}, Addis Ababa, {provider.contact?.phone}
               </p>
             </div>
             <Link
               href={`/studios/${provider.slug}`}
-              className="text-xs font-bold text-halo-primary hover:underline px-3 py-1.5 min-h-[44px] flex items-center"
+              className="text-xs font-semibold text-halo-ink hover:underline px-3 py-1.5 min-h-[44px] flex items-center"
             >
-              Storefront →
-            </Link>
+              Storefront</Link>
           </div>
         )}
 
         {/* Schedule */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-slate-100 pb-6 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-b border-halo-border pb-6 text-xs">
           <div>
-            <span className="text-slate-400 font-semibold block uppercase">Scheduled Date</span>
-            <span className="text-sm font-bold text-slate-900 mt-0.5 block">
+            <span className="text-halo-text-muted font-semibold block">Scheduled Date</span>
+            <span className="text-sm font-semibold text-halo-ink mt-0.5 block">
               {formatDate(booking.date)}
             </span>
           </div>
 
           <div>
-            <span className="text-slate-400 font-semibold block uppercase">Time Window</span>
-            <span className="text-sm font-bold text-slate-900 mt-0.5 block">
-              {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
+            <span className="text-halo-text-muted font-semibold block">Time Window</span>
+            <span className="text-sm font-semibold text-halo-ink mt-0.5 block">
+              {formatTime(booking.startTime)} to {formatTime(booking.endTime)}
             </span>
           </div>
 
           <div>
-            <span className="text-slate-400 font-semibold block uppercase">Duration</span>
-            <span className="text-sm font-bold text-slate-900 mt-0.5 block">
+            <span className="text-halo-text-muted font-semibold block">Duration</span>
+            <span className="text-sm font-semibold text-halo-ink mt-0.5 block">
               {booking.hours} hours
             </span>
           </div>
@@ -207,19 +202,19 @@ export default function BookingDetailPage() {
 
         {/* Itemized Table */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+          <h3 className="text-xs font-semibold text-stone-700">
             Reserved Items & Rates
           </h3>
-          <div className="divide-y divide-slate-100 border-y border-slate-100">
+          <div className="divide-y divide-halo-border border-y border-halo-border">
             {booking.items.map((item, idx) => (
               <div key={idx} className="py-3 flex items-center justify-between text-sm">
                 <div>
-                  <span className="font-semibold text-slate-900 block">{item.title}</span>
-                  <span className="text-xs text-slate-500">
-                    {formatETB(item.rateSnapshot)}/hr × {booking.hours} hrs × {item.qty} unit(s)
+                  <span className="font-semibold text-halo-ink block">{item.title}</span>
+                  <span className="text-xs text-halo-text-muted">
+                    {formatMoney(item.rateSnapshot, booking.currency || currencyOfProvider(booking.providerId))}/hr × {booking.hours} hrs × {item.qty} unit(s)
                   </span>
                 </div>
-                <span className="font-bold text-slate-900">{formatETB(item.lineTotal)}</span>
+                <span className="font-semibold text-halo-ink">{formatMoney(item.lineTotal, booking.currency || currencyOfProvider(booking.providerId))}</span>
               </div>
             ))}
           </div>
@@ -227,32 +222,32 @@ export default function BookingDetailPage() {
 
         {/* Financial Breakdown */}
         <div className="space-y-2 pt-2 text-sm">
-          <div className="flex justify-between text-slate-600">
+          <div className="flex justify-between text-stone-600">
             <span>Subtotal</span>
-            <span className="font-semibold text-slate-900">{formatETB(booking.subtotal)}</span>
+            <span className="font-semibold text-halo-ink">{formatMoney(booking.subtotal, booking.currency || currencyOfProvider(booking.providerId))}</span>
           </div>
 
-          <div className="flex justify-between text-slate-600">
+          <div className="flex justify-between text-stone-600">
             <span>Platform Service Fee (10%)</span>
-            <span className="font-semibold text-slate-900">{formatETB(booking.fee)}</span>
+            <span className="font-semibold text-halo-ink">{formatMoney(booking.fee, booking.currency || currencyOfProvider(booking.providerId))}</span>
           </div>
 
           {booking.deposit > 0 && (
             <div className="flex justify-between text-amber-800 font-medium pt-1">
               <span>Security Deposit (Refundable upon gear return)</span>
-              <span className="font-bold">{formatETB(booking.deposit)}</span>
+              <span className="font-semibold">{formatMoney(booking.deposit, booking.currency || currencyOfProvider(booking.providerId))}</span>
             </div>
           )}
 
-          <div className="flex justify-between text-base font-black text-slate-900 pt-3 border-t border-slate-200">
+          <div className="flex justify-between text-base font-semibold text-halo-ink pt-3 border-t border-halo-border">
             <span>Total Paid (Birr)</span>
-            <span className="text-xl text-halo-primary">{formatETB(booking.total)}</span>
+            <span className="text-xl text-halo-ink">{formatMoney(booking.total, booking.currency || currencyOfProvider(booking.providerId))}</span>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
-          <div className="text-xs text-slate-400">
+        <div className="pt-6 border-t border-halo-border flex flex-wrap items-center justify-between gap-4">
+          <div className="text-xs text-halo-text-muted">
             Created on {new Date(booking.createdAt).toLocaleDateString()}
           </div>
 
@@ -261,7 +256,7 @@ export default function BookingDetailPage() {
             {isRenter && ['requested', 'confirmed'].includes(booking.status) && (
               <button
                 onClick={handleCancel}
-                className="px-4 py-2 border border-red-300 text-red-600 hover:bg-red-50 text-xs font-bold rounded-lg transition-colors min-h-[44px]"
+                className="px-4 py-2 border border-red-300 text-red-600 hover:bg-red-50 text-xs font-semibold rounded-lg transition-colors min-h-[44px]"
               >
                 Cancel Reservation
               </button>
@@ -271,7 +266,7 @@ export default function BookingDetailPage() {
             {isOwner && booking.status === 'requested' && (
               <Link
                 href="/owner/bookings"
-                className="px-4 py-2 bg-halo-primary text-white text-xs font-bold rounded-lg min-h-[44px] flex items-center"
+                className="px-4 py-2 bg-halo-ink text-white text-xs font-semibold rounded-lg min-h-[44px] flex items-center"
               >
                 Manage in Owner Panel
               </Link>
@@ -279,7 +274,7 @@ export default function BookingDetailPage() {
 
             <Link
               href="/dashboard"
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors min-h-[44px] flex items-center"
+              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-lg transition-colors min-h-[44px] flex items-center"
             >
               Dashboard
             </Link>

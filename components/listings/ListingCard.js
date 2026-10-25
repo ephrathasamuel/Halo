@@ -1,140 +1,112 @@
 'use client';
 
 import Link from 'next/link';
-import { formatETB } from '@/lib/format';
+import { formatPrice, LISTING_TYPE_LABELS } from '@/lib/format';
+import { providerLocation } from '@/lib/geo';
 import { SafeImage } from '@/components/ui/SafeImage';
 
 /**
- * Reusable listing card for catalogues, storefronts, and featured listings.
+ * The one key fact shown under a listing title, so cards stay one line tall.
+ * @param {object} listing
+ * @returns {string}
+ */
+function keyFact(listing) {
+  if (listing.type === 'studio') {
+    return `Up to ${listing.capacity} people, ${listing.minHours || 2} hour minimum`;
+  }
+  if (listing.type === 'equipment') {
+    return [listing.category, `${listing.quantity} available`].filter(Boolean).join(', ');
+  }
+  if (listing.type === 'sale') {
+    return [listing.condition, listing.negotiable ? 'price negotiable' : ''].filter(Boolean).join(', ');
+  }
+  if (listing.type === 'service' && listing.eventTypes?.length) {
+    return listing.eventTypes.slice(0, 3).join(', ');
+  }
+  return '';
+}
+
+/**
+ * Listing card for catalogues, storefronts, and featured rows.
+ * The whole card is one link; the provider name is a second, separate link.
  * @param {{
  *   listing: object,
  *   brandColor?: string,
- *   showProvider?: boolean
+ *   showProvider?: boolean,
+ *   priority?: boolean
  * }} props
  */
-export function ListingCard({ listing, brandColor, showProvider = true }) {
+export function ListingCard({ listing, showProvider = true, priority = false }) {
   if (!listing) return null;
 
   const provider = listing._provider || listing.provider;
   const isService = listing.type === 'service';
-  const effectiveBrandColor = brandColor || provider?.brandColor || '#1E3A5F';
+  const href = `/listings/${listing.id}`;
+  const fact = keyFact(listing);
+  const { city, currency } = providerLocation(provider);
 
   return (
-    <article className="group bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col h-full focus-within:ring-2 focus-within:ring-halo-primary">
-      {/* Media Image */}
-      <Link
-        href={`/listings/${listing.id}`}
-        className="block relative aspect-[4/3] w-full overflow-hidden bg-slate-100 min-h-[180px]"
-        tabIndex={-1}
-        aria-hidden="true"
-      >
+    <article className="group relative flex flex-col">
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-halo-placeholder">
         <SafeImage
           src={listing.photos?.[0]}
-          alt={listing.title}
+          alt=""
           fallbackType={listing.type}
           fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
+          priority={priority}
+          className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
-
-        {/* Type Badge */}
-        <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-slate-800 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm capitalize border border-slate-200/60">
-          {listing.type}
+        <span className="absolute top-3 left-3 rounded-full bg-white/95 px-2.5 py-1 text-xs font-semibold text-halo-ink shadow-sm">
+          {LISTING_TYPE_LABELS[listing.type] || listing.type}
         </span>
-
-        {/* Neighbourhood Badge */}
-        {provider?.neighbourhood && (
-          <span className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-sm text-white text-xs px-2.5 py-0.5 rounded-md flex items-center gap-1">
-            <span>📍</span> {provider.neighbourhood}
-          </span>
-        )}
-      </Link>
-
-      {/* Card Content */}
-      <div className="p-4 flex flex-col flex-1 justify-between gap-3">
-        <div>
-          {/* Provider attribution */}
-          {showProvider && provider && (
-            <Link
-              href={`/studios/${provider.slug}`}
-              className="text-xs font-semibold hover:underline line-clamp-1 mb-1 block"
-              style={{ color: effectiveBrandColor }}
-            >
-              {provider.name}
-            </Link>
-          )}
-
-          {/* Title */}
-          <h3 className="font-bold text-slate-900 text-base leading-snug line-clamp-1 group-hover:text-halo-primary transition-colors">
-            <Link href={`/listings/${listing.id}`} className="focus:outline-none">
-              {listing.title}
-            </Link>
-          </h3>
-
-          {/* Description */}
-          <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-            {listing.description}
-          </p>
-
-          {/* Metadata chips */}
-          <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-            {listing.type === 'studio' && (
-              <>
-                <span className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                  👥 Up to {listing.capacity} people
-                </span>
-                <span className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                  ⏱️ Min {listing.minHours || 2}h
-                </span>
-              </>
-            )}
-            {listing.type === 'equipment' && (
-              <>
-                <span className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                  📦 {listing.quantity} available
-                </span>
-                <span className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                  🏷️ {listing.category}
-                </span>
-              </>
-            )}
-            {listing.type === 'service' && listing.eventTypes && (
-              <span className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded line-clamp-1">
-                🎉 {listing.eventTypes.slice(0, 2).join(', ')}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Pricing & Call to Action */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between mt-auto">
-          <div>
-            {isService ? (
-              <div className="flex flex-col">
-                <span className="text-[11px] text-slate-400 font-medium">Starting from</span>
-                <span className="text-sm font-bold text-slate-900">
-                  {formatETB(listing.startingFromHint || 0)}
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-baseline gap-1">
-                <span className="text-base font-bold text-slate-900">
-                  {formatETB(listing.hourlyRate || 0)}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">/hr</span>
-              </div>
-            )}
-          </div>
-
-          <Link
-            href={`/listings/${listing.id}`}
-            className="inline-flex items-center justify-center px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90 min-h-[44px]"
-            style={{ backgroundColor: effectiveBrandColor }}
-          >
-            {isService ? 'Request Quote' : 'View Details'}
-          </Link>
-        </div>
       </div>
+
+      <div className="mt-3 flex flex-1 flex-col">
+        <div className="flex items-center gap-1.5 text-[13px] text-halo-text-muted">
+          {showProvider && provider ? (
+            <>
+              <Link
+                href={`/studios/${provider.slug}`}
+                className="relative z-10 font-medium text-halo-ink hover:underline min-h-0 min-w-0"
+              >
+                {provider.name}
+              </Link>
+              {provider.neighbourhood && <span>in {provider.neighbourhood}</span>}
+            </>
+          ) : (
+            provider?.neighbourhood && <span>{provider.neighbourhood}, {city}</span>
+          )}
+        </div>
+
+        <h3 className="mt-0.5 text-[15px] font-semibold leading-snug text-halo-ink line-clamp-1">
+          {/* Stretched link: the whole card is clickable, but only this text is announced */}
+          <Link href={href} className="after:absolute after:inset-0 after:content-[''] min-h-0 min-w-0 focus-visible:outline-none">
+            {listing.title}
+          </Link>
+        </h3>
+
+        {fact && <p className="mt-0.5 text-[13px] text-halo-text-muted line-clamp-1">{fact}</p>}
+
+        <p className="mt-2 text-[15px] text-halo-ink tabular">
+          {isService ? (
+            <>
+              <span className="text-halo-text-muted">From </span>
+              <span className="font-semibold">{formatPrice(listing.startingFromHint || 0, currency)}</span>
+            </>
+          ) : listing.type === 'sale' ? (
+            <span className="font-semibold">{formatPrice(listing.salePrice || 0, currency)}</span>
+          ) : (
+            <>
+              <span className="font-semibold">{formatPrice(listing.hourlyRate || 0, currency)}</span>
+              <span className="text-halo-text-muted"> per hour</span>
+            </>
+          )}
+        </p>
+      </div>
+
+      {/* Keyboard focus ring for the stretched link */}
+      <span className="pointer-events-none absolute -inset-2 rounded-2xl ring-2 ring-halo-gold opacity-0 group-has-[a:focus-visible]:opacity-100" aria-hidden="true" />
     </article>
   );
 }

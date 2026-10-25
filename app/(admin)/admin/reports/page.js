@@ -1,142 +1,151 @@
 'use client';
 
-import { useStorageSync } from '@/hooks/useStorageSync';
+import { Download } from 'lucide-react';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { formatDate, formatETB } from '@/lib/format';
+import { formatDate, formatMoney } from '@/lib/format';
+import { providerLocation } from '@/lib/geo';
+import { statusLabel } from '@/lib/status';
 import { exportCsv, downloadCsv } from '@/lib/csv';
+import { useAdminScope, useScopedStorage } from '@/hooks/useAdminScope';
+import { PageHeader, Panel, StatusBadge, btn } from '@/components/dashboard/DashboardUI';
+
+const REVENUE_STATUSES = ['confirmed', 'in_progress', 'completed', 'reviewed'];
 
 export default function AdminReportsPage() {
-  const { data: bookings } = useStorageSync(STORAGE_KEYS.BOOKINGS, []);
-  const { data: providers } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
+  const { label: scopeLabel } = useAdminScope();
+  const { data: bookings } = useScopedStorage(STORAGE_KEYS.BOOKINGS);
+  const { data: providers } = useScopedStorage(STORAGE_KEYS.PROVIDERS);
   const providerMap = new Map(providers.map((p) => [p.id, p]));
 
-  // All paid and confirmed/completed bookings
-  const revenueBookings = bookings.filter((b) =>
-    ['confirmed', 'in_progress', 'completed', 'reviewed'].includes(b.status)
-  );
+  const currencyOf = (b) => b.currency || providerLocation(providerMap.get(b.providerId)).currency;
+  const revenueBookings = bookings.filter((b) => REVENUE_STATUSES.includes(b.status));
 
-  const totalGMV = revenueBookings.reduce((sum, b) => sum + (b.total || 0), 0);
-  const totalSubtotal = revenueBookings.reduce((sum, b) => sum + (b.subtotal || 0), 0);
-  const totalCommission = revenueBookings.reduce((sum, b) => sum + (b.fee || 0), 0);
-  const totalOwnerPayouts = totalSubtotal - totalCommission;
+  // Money in different currencies is never added together: one row per currency
+  const byCurrency = [...revenueBookings.reduce((acc, b) => {
+    const c = currencyOf(b);
+    const row = acc.get(c) || { currency: c, count: 0, subtotal: 0, fee: 0, total: 0 };
+    row.count += 1;
+    row.subtotal += b.subtotal || 0;
+    row.fee += b.fee || 0;
+    row.total += b.total || 0;
+    acc.set(c, row);
+    return acc;
+  }, new Map()).values()];
 
   const handleExportCsv = () => {
     const columns = [
       { key: 'id', label: 'Booking ID' },
-      { key: 'providerName', label: 'Provider Storefront' },
-      { key: 'date', label: 'Shoot Date' },
+      { key: 'providerName', label: 'Provider' },
+      { key: 'country', label: 'Country' },
+      { key: 'currency', label: 'Currency' },
+      { key: 'date', label: 'Date' },
       { key: 'status', label: 'Status' },
-      { key: 'subtotal', label: 'Subtotal (ETB)' },
-      { key: 'fee', label: 'Halo 10% Commission (ETB)' },
-      { key: 'ownerNet', label: 'Owner Net (ETB)' },
-      { key: 'total', label: 'Gross Total (ETB)' },
+      { key: 'subtotal', label: 'Subtotal' },
+      { key: 'fee', label: 'Halo fee (10%)' },
+      { key: 'ownerNet', label: 'Owner net' },
+      { key: 'total', label: 'Gross total' },
       { key: 'paymentStatus', label: 'Payment' },
     ];
-
-    const rows = revenueBookings.map((b) => ({
-      id: b.id,
-      providerName: providerMap.get(b.providerId)?.name || 'Unknown',
-      date: b.date,
-      status: b.status,
-      subtotal: b.subtotal,
-      fee: b.fee,
-      ownerNet: (b.subtotal || 0) - (b.fee || 0),
-      total: b.total,
-      paymentStatus: b.paymentStatus,
-    }));
-
-    const csvData = exportCsv(rows, columns);
-    downloadCsv(csvData, `halo-platform-commission-report-${new Date().toISOString().slice(0, 10)}.csv`);
+    const rows = revenueBookings.map((b) => {
+      const provider = providerMap.get(b.providerId);
+      return {
+        id: b.id,
+        providerName: provider?.name || 'Unknown',
+        country: providerLocation(provider).country,
+        currency: currencyOf(b),
+        date: b.date,
+        status: b.status,
+        subtotal: b.subtotal,
+        fee: b.fee,
+        ownerNet: (b.subtotal || 0) - (b.fee || 0),
+        total: b.total,
+        paymentStatus: b.paymentStatus,
+      };
+    });
+    downloadCsv(exportCsv(rows, columns), `halo-commission-report-${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Platform Commission & Financial Audit</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Reconcile platform take rate (mock 10% fee), gross booking volumes, and owner payouts.
-          </p>
-        </div>
+      <PageHeader
+        title="Reports"
+        description={`Halo fees (10% of each rental), booking volume and owner payouts. ${scopeLabel}.`}
+        actions={
+          <button onClick={handleExportCsv} disabled={revenueBookings.length === 0} className={btn.secondary}>
+            <Download className="h-4 w-4" aria-hidden="true" />
+            Export CSV
+          </button>
+        }
+      />
 
-        <button
-          onClick={handleExportCsv}
-          disabled={revenueBookings.length === 0}
-          className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 transition shadow-sm disabled:opacity-50 min-h-[44px]"
-        >
-          <span>📥</span> Export Audit CSV
-        </button>
-      </div>
+      <Panel title="Totals by currency" description="Confirmed, in progress and completed bookings." flush>
+        {byCurrency.length === 0 ? (
+          <p className="px-5 pb-6 sm:px-6 text-halo-text-muted">No revenue yet.</p>
+        ) : (
+          <div className="overflow-x-auto border-t border-halo-border">
+            <table className="w-full text-left text-sm tabular">
+              <thead className="text-halo-text-muted">
+                <tr className="border-b border-halo-border">
+                  <th scope="col" className="px-5 sm:px-6 py-3 font-medium">Currency</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Bookings</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Halo fees</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Rental volume</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Owner payouts</th>
+                  <th scope="col" className="px-4 py-3 font-medium">Gross incl. deposits</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-halo-border text-halo-ink">
+                {byCurrency.map((r) => (
+                  <tr key={r.currency}>
+                    <td className="px-5 sm:px-6 py-3 font-semibold">{r.currency}</td>
+                    <td className="px-4 py-3">{r.count}</td>
+                    <td className="px-4 py-3 font-semibold">{formatMoney(r.fee, r.currency)}</td>
+                    <td className="px-4 py-3">{formatMoney(r.subtotal, r.currency)}</td>
+                    <td className="px-4 py-3">{formatMoney(r.subtotal - r.fee, r.currency)}</td>
+                    <td className="px-4 py-3">{formatMoney(r.total, r.currency)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
 
-      {/* Metrics Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">Platform Commission (10%)</p>
-          <p className="text-2xl font-black text-emerald-700">{formatETB(totalCommission)}</p>
-          <p className="text-[11px] text-slate-400">Halo platform net revenue</p>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Gross Subtotal Volume</p>
-          <p className="text-2xl font-black text-slate-900">{formatETB(totalSubtotal)}</p>
-          <p className="text-[11px] text-slate-400">Sum of all base hourly rentals</p>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-600">Owner Net Payouts</p>
-          <p className="text-2xl font-black text-blue-700">{formatETB(totalOwnerPayouts)}</p>
-          <p className="text-[11px] text-slate-400">90% payable to studio owners</p>
-        </div>
-
-        <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-1">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Gross Total (GMV)</p>
-          <p className="text-2xl font-black text-slate-900">{formatETB(totalGMV)}</p>
-          <p className="text-[11px] text-slate-400">Including refundable deposits</p>
-        </div>
-      </div>
-
-      {/* Audit Table */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6 space-y-4">
-        <h2 className="text-lg font-bold text-slate-900">Commission Ledger Details</h2>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-700">
-            <thead className="bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200">
-              <tr>
-                <th scope="col" className="px-4 py-3">Booking ID</th>
-                <th scope="col" className="px-4 py-3">Studio Provider</th>
-                <th scope="col" className="px-4 py-3">Date</th>
-                <th scope="col" className="px-4 py-3">Subtotal</th>
-                <th scope="col" className="px-4 py-3">Platform 10% Fee</th>
-                <th scope="col" className="px-4 py-3">Owner 90%</th>
-                <th scope="col" className="px-4 py-3">Status</th>
+      <Panel title="Commission ledger" flush>
+        <div className="overflow-x-auto border-t border-halo-border">
+          <table className="w-full text-left text-sm tabular">
+            <thead className="text-halo-text-muted">
+              <tr className="border-b border-halo-border">
+                <th scope="col" className="px-5 sm:px-6 py-3 font-medium">Booking</th>
+                <th scope="col" className="px-4 py-3 font-medium">Provider</th>
+                <th scope="col" className="px-4 py-3 font-medium">Date</th>
+                <th scope="col" className="px-4 py-3 font-medium">Subtotal</th>
+                <th scope="col" className="px-4 py-3 font-medium">Halo fee</th>
+                <th scope="col" className="px-4 py-3 font-medium">Owner net</th>
+                <th scope="col" className="px-4 py-3 font-medium">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {revenueBookings.map((b) => (
-                <tr key={b.id} className="hover:bg-slate-50 transition">
-                  <td className="px-4 py-3 font-mono text-xs text-slate-500">#{b.id.slice(0, 8)}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-900">
-                    {providerMap.get(b.providerId)?.name || 'Unknown'}
-                  </td>
-                  <td className="px-4 py-3 text-xs">{formatDate(b.date)}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800">{formatETB(b.subtotal)}</td>
-                  <td className="px-4 py-3 font-black text-emerald-700">+{formatETB(b.fee)}</td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {formatETB((b.subtotal || 0) - (b.fee || 0))}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="text-xs uppercase font-bold px-2 py-0.5 rounded-full bg-slate-100">
-                      {b.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+            <tbody className="divide-y divide-halo-border text-halo-ink">
+              {revenueBookings.map((b) => {
+                const c = currencyOf(b);
+                return (
+                  <tr key={b.id}>
+                    <td className="px-5 sm:px-6 py-3 font-mono text-xs text-halo-text-muted">#{b.id.slice(-6)}</td>
+                    <td className="px-4 py-3 font-medium">{providerMap.get(b.providerId)?.name || 'Unknown'}</td>
+                    <td className="px-4 py-3">{formatDate(b.date)}</td>
+                    <td className="px-4 py-3">{formatMoney(b.subtotal, c)}</td>
+                    <td className="px-4 py-3 font-semibold">{formatMoney(b.fee, c)}</td>
+                    <td className="px-4 py-3">{formatMoney((b.subtotal || 0) - (b.fee || 0), c)}</td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={b.status} label={statusLabel(b.status)} />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }

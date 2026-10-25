@@ -2,10 +2,19 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { Building2, Camera, Clapperboard, ImageOff, Store, User } from 'lucide-react';
+
+const FALLBACK_ICONS = {
+  studio: Building2,
+  equipment: Camera,
+  service: Clapperboard,
+  avatar: User,
+  provider: Store,
+  default: ImageOff,
+};
 
 /**
- * Image component with automatic fallback when local or remote image fails to load.
- * Supports both Next.js Image optimization and inline SVG fallback.
+ * Image component with a quiet fallback when a local or remote image fails to load.
  * @param {{
  *   src: string,
  *   alt: string,
@@ -33,36 +42,22 @@ export function SafeImage({
   const [error, setError] = useState(!src);
 
   if (error || !src) {
-    const icons = {
-      studio: '🏢',
-      equipment: '📹',
-      service: '🎬',
-      avatar: '👤',
-      provider: '⭐',
-      default: '🖼️',
-    };
-    const icon = icons[fallbackType] || icons.default;
+    const Icon = FALLBACK_ICONS[fallbackType] || FALLBACK_ICONS.default;
 
     return (
       <div
-        className={`bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 flex flex-col items-center justify-center p-3 select-none ${
+        className={`bg-halo-placeholder text-halo-text-muted flex items-center justify-center select-none ${
           fill ? 'absolute inset-0 w-full h-full' : ''
         } ${className}`}
         style={!fill && width && height ? { width, height } : undefined}
         role="img"
-        aria-label={alt || 'Image placeholder'}
+        aria-label={alt || 'Image not available'}
       >
-        <span className="text-3xl mb-1 filter drop-shadow-sm" aria-hidden="true">
-          {icon}
-        </span>
-        <span className="text-xs font-medium text-slate-500 text-center line-clamp-1 max-w-[90%]">
-          {alt || 'Halo Media'}
-        </span>
+        <Icon className="w-8 h-8" strokeWidth={1.5} aria-hidden="true" />
       </div>
     );
   }
 
-  // If using fill mode
   if (fill) {
     return (
       <Image
