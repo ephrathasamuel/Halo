@@ -27,12 +27,34 @@ export async function generateMetadata({ params }) {
   };
 }
 
-/**
- * Provider Storefront page.
- * Server component that provides SEO metadata and renders client storefront.
- * @param {{ params: Promise<{ slug: string }> }} props
- */
 export default async function StudioPage({ params }) {
   const { slug } = await params;
-  return <StudioStorefrontClient slug={slug} />;
+  const provider = seedProviders.find((p) => p.slug === slug);
+
+  const jsonLd = provider
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'LocalBusiness',
+        name: provider.name,
+        description: provider.about || provider.tagline,
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: provider.city || 'Addis Ababa',
+          addressRegion: provider.neighbourhood,
+        },
+        telephone: provider.contact?.phone,
+      }
+    : null;
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      <StudioStorefrontClient slug={slug} />
+    </>
+  );
 }

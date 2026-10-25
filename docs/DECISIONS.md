@@ -25,4 +25,7 @@ Each entry records a design decision with a one-line rationale.
 | 20 | Versioned quote negotiation with previous quotes marked 'revised' | Preserves full audit history of quote modifications while allowing clear client acceptance of current terms |
 | 21 | One-review and one-owner-reply enforcement at domain level | Preserves review integrity and prevents reply spam or multiple ratings per completed transaction |
 | 22 | Administrator dispute mediation linking target record transitions | Guarantees transparent arbitration and advances contested bookings and productions directly into terminal resolved state |
+| 23 | Injected JSON-LD schemas (`LocalBusiness`, `Product`/`Place`) into server components | Maximizes search indexing visibility without violating the client storage boundary |
+| 24 | Applied `max-width: 100vw; overflow-x: hidden;` globally to `html, body` | Eliminates horizontal scrollbar glitches and guarantees full 360px mobile viewport compliance |
+| 25 | Documented bundle metrics, accessibility baseline, and code-splitting in `PERF.md` | Formalizes performance benchmarks and compliance with Hard Rule 8 and 1.2 stack conventions |
 

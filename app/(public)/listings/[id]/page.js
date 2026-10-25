@@ -34,5 +34,37 @@ export async function generateMetadata({ params }) {
  */
 export default async function ListingDetailPage({ params }) {
   const { id } = await params;
-  return <ListingDetailClient id={id} />;
+  const listing = seedListings.find((l) => l.id === id);
+  const provider = listing ? seedProviders.find((p) => p.id === listing.providerId) : null;
+
+  const jsonLd = listing
+    ? {
+        '@context': 'https://schema.org',
+        '@type': listing.type === 'studio' ? 'Place' : 'Product',
+        name: listing.title,
+        description: listing.description,
+        image: listing.photos?.[0] || '/images/listings/b-light-studio-1.jpg',
+        offers: {
+          '@type': 'Offer',
+          price: listing.hourlyRate || listing.startingFromHint || 0,
+          priceCurrency: 'ETB',
+          seller: {
+            '@type': 'Organization',
+            name: provider?.name || 'Halo Provider',
+          },
+        },
+      }
+    : null;
+
+  return (
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      <ListingDetailClient id={id} />
+    </>
+  );
 }
