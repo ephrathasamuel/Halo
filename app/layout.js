@@ -9,14 +9,31 @@ const inter = Inter({
   variable: '--font-inter',
 });
 
+// Share previews need absolute image URLs. Vercel sets VERCEL_PROJECT_PRODUCTION_URL
+// on every deploy, so links work even before NEXT_PUBLIC_SITE_URL is configured.
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`) ||
+  'http://localhost:3000';
+
+const DESCRIPTION = 'Find and book photo and film studios, production equipment and event filming crews in your city.';
+
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Halo | Book studios, gear and filming crews in Addis Ababa',
+    default: 'Halo | Book studios, gear and film crews in your city',
     template: '%s | Halo',
   },
-  description:
-    'Find and book photo and film studios, production equipment, and event filming crews in Addis Ababa.',
+  description: DESCRIPTION,
+  openGraph: {
+    type: 'website',
+    siteName: 'Halo',
+    title: 'Halo | Book studios, gear and film crews in your city',
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
 };
 
 export const viewport = {

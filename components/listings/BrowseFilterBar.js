@@ -25,9 +25,10 @@ const selectButtonClass =
  *   onFilterChange: (newFilters: object) => void,
  *   onReset: () => void,
  *   totalResults: number,
- *   regions?: string[],
+ *   regions?: { value: string, label: string }[],
  *   cities?: string[],
  *   neighbourhoods?: string[],
+ *   regionForCity?: (city: string) => string,
  *   currency?: string
  * }} props
  */
@@ -39,6 +40,7 @@ export function BrowseFilterBar({
   regions = [],
   cities = [],
   neighbourhoods = [],
+  regionForCity = () => '',
   currency = '',
 }) {
   const [panelOpen, setPanelOpen] = useState(false);
@@ -49,7 +51,15 @@ export function BrowseFilterBar({
 
   // Choosing a broader place clears the narrower ones under it
   const setRegion = (region) => onFilterChange({ ...filters, region, city: '', neighbourhood: '', page: 1 });
-  const setCity = (city) => onFilterChange({ ...filters, city, neighbourhood: '', page: 1 });
+  // Picking a city first fills in its region, so the region list stays in step
+  const setCity = (city) =>
+    onFilterChange({
+      ...filters,
+      region: city && !filters.region ? regionForCity(city) : filters.region,
+      city,
+      neighbourhood: '',
+      page: 1,
+    });
 
   const activeFilterCount = [
     filters.region,
@@ -137,21 +147,27 @@ export function BrowseFilterBar({
           label="Region"
           value={filters.region || ''}
           onChange={setRegion}
-          options={[{ value: '', label: regions.length ? 'All regions' : 'Choose a country first' }, ...regions.map((r) => ({ value: r, label: r }))]}
+          options={[{ value: '', label: 'All regions' }, ...regions]}
           buttonClassName={selectButtonClass}
         />
         <Select
           label="City"
           value={filters.city || ''}
           onChange={setCity}
-          options={[{ value: '', label: cities.length ? 'All cities' : 'Choose a country first' }, ...cities.map((c) => ({ value: c, label: c }))]}
+          options={[
+            { value: '', label: 'All cities' },
+            ...cities.map((c) => ({ value: c, label: c })),
+          ]}
           buttonClassName={selectButtonClass}
         />
         <Select
           label="Area"
           value={filters.neighbourhood || ''}
           onChange={(v) => update('neighbourhood', v)}
-          options={[{ value: '', label: 'All areas' }, ...neighbourhoods.map((n) => ({ value: n, label: n }))]}
+          options={[
+            { value: '', label: filters.city ? 'All areas' : 'Choose a city first' },
+            ...neighbourhoods.map((n) => ({ value: n, label: n })),
+          ]}
           className="col-span-2 md:col-span-1"
           buttonClassName={selectButtonClass}
         />

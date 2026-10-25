@@ -48,7 +48,7 @@ export function BackButton({ fallback, label = 'Back', className = '' }) {
     <button
       type="button"
       onClick={goBack}
-      className={`inline-flex items-center gap-1.5 -ml-2 px-2 rounded-lg text-sm font-medium text-halo-text-muted hover:text-halo-ink hover:bg-halo-ink/[0.05] min-h-[40px] ${className}`}
+      className={`inline-flex items-center gap-1.5 pl-3 pr-4 rounded-xl border border-halo-border-strong bg-halo-surface text-sm font-medium text-halo-ink shadow-sm transition-colors hover:border-halo-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-gold min-h-[40px] ${className}`}
     >
       <ArrowLeft className="h-4 w-4" aria-hidden="true" />
       {label}

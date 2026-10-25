@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/states/EmptyState';
 import { ListingGridSkeleton } from '@/components/states/LoadingState';
 import { useHydrated } from '@/hooks/useHydrated';
 import { useCountry } from '@/hooks/useCountry';
-import { citiesOf, countryName, currencyFor, regionsOf } from '@/lib/geo';
+import { cityOptions, countryName, currencyFor, regionForCity, regionOptions, regionsOf } from '@/lib/geo';
 
 const PAGE_TITLES = {
   studio: 'Studios for hire',
@@ -91,7 +91,7 @@ function BrowseContent() {
 
   // A region or city from another country makes no sense once the country changes
   useEffect(() => {
-    if (country === null || !filters.region || (country && regionsOf(country).includes(filters.region))) return;
+    if (!country || !filters.region || regionsOf(country).includes(filters.region)) return;
     const cleared = { ...filters, region: '', city: '', neighbourhood: '', page: 1 };
     setFilters(cleared);
     updateUrlParams(cleared);
@@ -134,9 +134,9 @@ function BrowseContent() {
     : { items: [], total: 0, totalPages: 0, page: 1 };
 
   // Region, then city, then the areas providers in that city actually use
-  const regions = country ? regionsOf(country) : [];
-  const cities = country ? citiesOf(country, filters.region) : [];
-  const neighbourhoods = ready
+  const regions = regionOptions(country);
+  const cities = cityOptions(country, filters.region);
+  const neighbourhoods = ready && filters.city
     ? [
         ...new Set(
           getPublicProviders({ country, region: filters.region, city: filters.city })
@@ -166,6 +166,7 @@ function BrowseContent() {
         regions={regions}
         cities={cities}
         neighbourhoods={neighbourhoods}
+        regionForCity={(city) => regionForCity(country, city)}
         currency={country ? currencyFor(country) : ''}
       />
 
