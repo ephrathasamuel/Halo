@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ShieldAlert, UserPlus } from 'lucide-react';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { COUNTRIES, countryName, providerLocation } from '@/lib/geo';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { createRegionalAdmin, moveRegionalAdmin, removeRegionalAdmin } from '@/lib/domain/users';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { useAdminScope } from '@/hooks/useAdminScope';
@@ -164,7 +165,7 @@ export default function RegionalAdminsPage() {
           </div>
           <div className="lg:col-span-1">
             <label htmlFor="ra-phone" className="block text-xs font-medium text-halo-text-muted mb-1">Phone (optional)</label>
-            <input id="ra-phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} />
+            <PhoneInput id="ra-phone" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} defaultCountry={form.country} inputClassName={inputClass} />
           </div>
           <Select
             label="Country"

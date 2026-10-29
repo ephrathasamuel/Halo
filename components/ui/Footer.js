@@ -62,6 +62,17 @@ export function Footer() {
         <div className="mt-10 pt-6 border-t border-halo-border flex flex-col sm:flex-row gap-2 justify-between text-xs text-halo-text-muted">
           <p>&copy; {new Date().getFullYear()} Halo. Book the space. Make the work.</p>
           <p>Every price is set by the provider, in their own currency.</p>
+          {/* Required credit for the place data (CC BY 4.0 and ODbL) */}
+          <p>
+            Places from{' '}
+            <a href="https://www.geonames.org" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-halo-ink min-h-0 min-w-0">
+              GeoNames
+            </a>{' '}
+            and{' '}
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-halo-ink min-h-0 min-w-0">
+              OpenStreetMap
+            </a>
+          </p>
         </div>
       </div>
     </footer>

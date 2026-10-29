@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
+import { COUNTRIES } from '@/lib/geo';
+
+const COUNTRY_OPTIONS = [{ value: '', label: 'All countries' }, ...COUNTRIES.map((c) => ({ value: c.code, label: c.name }))];
 
 const TYPES = [
   { value: '', label: 'All' },
@@ -25,10 +28,12 @@ const selectButtonClass =
  *   onFilterChange: (newFilters: object) => void,
  *   onReset: () => void,
  *   totalResults: number,
- *   regions?: { value: string, label: string }[],
+ *   regions?: string[],
  *   cities?: string[],
  *   neighbourhoods?: string[],
  *   regionForCity?: (city: string) => string,
+ *   country?: string,
+ *   onCountryChange?: (code: string) => void,
  *   currency?: string
  * }} props
  */
@@ -41,6 +46,8 @@ export function BrowseFilterBar({
   cities = [],
   neighbourhoods = [],
   regionForCity = () => '',
+  country = '',
+  onCountryChange = () => {},
   currency = '',
 }) {
   const [panelOpen, setPanelOpen] = useState(false);
@@ -62,6 +69,7 @@ export function BrowseFilterBar({
     });
 
   const activeFilterCount = [
+    country,
     filters.region,
     filters.city,
     filters.neighbourhood,
@@ -141,21 +149,34 @@ export function BrowseFilterBar({
       {/* Filters: always visible from tablet up, toggled on phones */}
       <div
         id="browse-filters"
-        className={`${panelOpen ? 'grid' : 'hidden'} md:grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3`}
+        className={`${panelOpen ? 'grid' : 'hidden'} md:grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3`}
       >
+        <Select
+          label="Country"
+          value={country}
+          onChange={(code) => {
+            onFilterChange({ ...filters, region: '', city: '', neighbourhood: '', page: 1 });
+            onCountryChange(code);
+          }}
+          options={COUNTRY_OPTIONS}
+          className="col-span-2 md:col-span-1"
+          buttonClassName={selectButtonClass}
+        />
         <Select
           label="Region"
           value={filters.region || ''}
           onChange={setRegion}
-          options={[{ value: '', label: 'All regions' }, ...regions]}
+          disabled={!country}
+          options={[{ value: '', label: country ? 'All regions' : 'Choose a country first' }, ...regions.map((r) => ({ value: r, label: r }))]}
           buttonClassName={selectButtonClass}
         />
         <Select
           label="City"
           value={filters.city || ''}
           onChange={setCity}
+          disabled={!country}
           options={[
-            { value: '', label: 'All cities' },
+            { value: '', label: country ? 'All cities' : 'Choose a country first' },
             ...cities.map((c) => ({ value: c, label: c })),
           ]}
           buttonClassName={selectButtonClass}
@@ -227,7 +248,10 @@ export function BrowseFilterBar({
           {hasAnyFilter && (
             <button
               type="button"
-              onClick={onReset}
+              onClick={() => {
+                onReset();
+                onCountryChange('');
+              }}
               className="text-sm font-medium text-halo-text-muted underline underline-offset-2 hover:text-halo-ink min-h-[36px]"
             >
               Clear all

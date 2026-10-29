@@ -5,15 +5,17 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signUp, signUpProvider } from '@/lib/domain/auth';
 import { safeReturnPath } from '@/lib/safeReturnPath';
-import { COUNTRIES, citiesOf, regionsOf } from '@/lib/geo';
+import { COUNTRIES, cityCoords, cityNames, regionNames } from '@/lib/geo';
 import { useCountry } from '@/hooks/useCountry';
+import { usePlaces } from '@/hooks/usePlaces';
 import { AuthCard, authInputClass } from '@/components/ui/AuthCard';
+import { AreaSearch } from '@/components/ui/AreaSearch';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Select } from '@/components/ui/Select';
 
 const ACCOUNT_FIELDS = [
   { key: 'name', label: 'Full name', type: 'text', autoComplete: 'name' },
   { key: 'email', label: 'Email', type: 'email', autoComplete: 'email' },
-  { key: 'phone', label: 'Phone number', type: 'tel', autoComplete: 'tel', placeholder: 'With country code, e.g. +251' },
 ];
 
 const COUNTRY_OPTIONS = COUNTRIES.map((c) => ({ value: c.code, label: c.name }));
@@ -49,6 +51,8 @@ function SignUpContent() {
     region: '',
     city: '',
     neighbourhood: '',
+    latitude: null,
+    longitude: null,
   });
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,8 +64,16 @@ function SignUpContent() {
 
   const set = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
   const isProvider = accountType === 'provider';
-  const regions = form.country ? regionsOf(form.country) : [];
-  const cities = form.country && form.region ? citiesOf(form.country, form.region) : [];
+  const { places, loading: placesLoading } = usePlaces(isProvider ? form.country : '');
+  const regions = regionNames(places);
+  const cities = form.region ? cityNames(places, form.region) : [];
+  const coords = form.city ? cityCoords(places, form.city, form.region) : null;
+
+  // A new city resets the area, and its centre is the map position until an area is picked
+  const setCity = (city) => {
+    const c = cityCoords(places, city, form.region);
+    setForm((f) => ({ ...f, city, neighbourhood: '', latitude: c?.lat ?? null, longitude: c?.lng ?? null }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -137,10 +149,25 @@ function SignUpContent() {
         <Select
           label="Country"
           value={form.country}
-          onChange={(v) => setForm((f) => ({ ...f, country: v, region: '', city: '' }))}
-          options={COUNTRY_OPTIONS}
+          onChange={(v) => setForm((f) => ({ ...f, country: v, region: '', city: '', neighbourhood: '' }))}
+          options={[{ value: '', label: 'Choose your country' }, ...COUNTRY_OPTIONS]}
           buttonClassName={selectButton}
         />
+
+        <div>
+          <label htmlFor="signup-phone" className="block text-sm font-medium text-halo-ink mb-1.5">
+            Phone number
+          </label>
+          <PhoneInput
+            id="signup-phone"
+            value={form.phone}
+            onChange={set('phone')}
+            defaultCountry={form.country}
+            required
+            inputClassName={authInputClass}
+            selectClassName="min-h-[48px]"
+          />
+        </div>
 
         {isProvider && (
           <>
@@ -156,25 +183,36 @@ function SignUpContent() {
               <Select
                 label="Region"
                 value={form.region}
-                onChange={(v) => setForm((f) => ({ ...f, region: v, city: '' }))}
-                options={[{ value: '', label: 'Choose' }, ...regions.map((r) => ({ value: r, label: r }))]}
+                onChange={(v) => setForm((f) => ({ ...f, region: v, city: '', neighbourhood: '' }))}
+                options={[
+                  { value: '', label: !form.country ? 'Country first' : placesLoading ? 'Loading' : 'Choose' },
+                  ...regions.map((r) => ({ value: r, label: r })),
+                ]}
                 buttonClassName={selectButton}
               />
               <Select
                 label="City"
                 value={form.city}
-                onChange={set('city')}
+                onChange={setCity}
                 options={[{ value: '', label: form.region ? 'Choose' : 'Region first' }, ...cities.map((c) => ({ value: c, label: c }))]}
                 buttonClassName={selectButton}
               />
             </div>
-            <TextField
-              id="signup-area"
-              label="Neighbourhood or area"
-              placeholder="e.g. Bole, Westlands, Lekki"
-              value={form.neighbourhood}
-              onChange={set('neighbourhood')}
-            />
+            <div>
+              <label htmlFor="signup-area" className="block text-sm font-medium text-halo-ink mb-1.5">
+                Neighbourhood or area
+              </label>
+              <AreaSearch
+                id="signup-area"
+                value={form.neighbourhood}
+                onChange={set('neighbourhood')}
+                onPick={(place) => setForm((f) => ({ ...f, latitude: place.lat, longitude: place.lng }))}
+                city={form.city}
+                coords={coords}
+                required
+                className={authInputClass}
+              />
+            </div>
           </>
         )}
 

@@ -7,6 +7,7 @@ import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { COUNTRIES } from '@/lib/geo';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { updateProfile } from '@/lib/domain/users';
 import { EmptyState } from '@/components/states/EmptyState';
 import { ImageUploader } from '@/components/ui/ImageUploader';
@@ -82,7 +83,7 @@ export default function AccountPage() {
             </div>
             <div>
               <label htmlFor="acc-phone" className="block text-sm font-medium text-halo-ink mb-1.5">Phone</label>
-              <input id="acc-phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} />
+              <PhoneInput id="acc-phone" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} defaultCountry={form.country} inputClassName={inputClass} />
             </div>
             <Select
               label="Country"

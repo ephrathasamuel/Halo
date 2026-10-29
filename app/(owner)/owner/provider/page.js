@@ -6,17 +6,24 @@ import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { saveProvider } from '@/lib/domain/providers';
-import { citiesOf, countryName, providerLocation, regionsOf } from '@/lib/geo';
+import { cityCoords, cityNames, countryName, providerLocation, regionNames } from '@/lib/geo';
+import { usePlaces } from '@/hooks/usePlaces';
+import { AreaSearch } from '@/components/ui/AreaSearch';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Select } from '@/components/ui/Select';
 import { ImageUploader } from '@/components/ui/ImageUploader';
 import { ProviderLogo } from '@/components/ui/ProviderLogo';
 import { dominantColor } from '@/lib/media';
 
+/** Keeps a saved value selectable even if it isn't in today's list */
+const withCurrent = (list, current) => (current && !list.includes(current) ? [current, ...list] : list);
 
 export default function OwnerProviderSettingsPage() {
   const { session } = useSession();
   const { data: providers, refresh } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
   const provider = providers.find((p) => p.ownerId === session?.userId);
+  const providerCountry = provider ? providerLocation(provider).country : '';
+  const { places } = usePlaces(providerCountry);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -25,6 +32,8 @@ export default function OwnerProviderSettingsPage() {
     region: '',
     city: '',
     neighbourhood: '',
+    latitude: null,
+    longitude: null,
     brandColor: '#D4AF37',
     logo: '',
     cover: '',
@@ -47,6 +56,8 @@ export default function OwnerProviderSettingsPage() {
         region: providerLocation(provider).region,
         city: providerLocation(provider).city,
         neighbourhood: provider.neighbourhood || '',
+        latitude: provider.latitude ?? null,
+        longitude: provider.longitude ?? null,
         brandColor: provider.brandColor || '#D4AF37',
         logo: provider.logo || '',
         cover: provider.cover || '',
@@ -80,6 +91,8 @@ export default function OwnerProviderSettingsPage() {
       region: formData.region,
       city: formData.city,
       neighbourhood: formData.neighbourhood,
+      latitude: formData.latitude ?? undefined,
+      longitude: formData.longitude ?? undefined,
       brandColor: formData.brandColor,
       logo: formData.logo,
       cover: formData.cover,
@@ -272,17 +285,21 @@ export default function OwnerProviderSettingsPage() {
             <Select
               label="Region *"
               value={formData.region}
-              onChange={(v) => setFormData({ ...formData, region: v, city: '' })}
-              options={regionsOf(providerLocation(provider).country).map((r) => ({ value: r, label: r }))}
+              onChange={(v) => setFormData({ ...formData, region: v, city: '', neighbourhood: '' })}
+              options={withCurrent(regionNames(places), formData.region).map((r) => ({ value: r, label: r }))}
               buttonClassName="min-h-[44px] px-4 rounded-xl border border-halo-border text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-gold"
             />
             <Select
               label="City *"
               value={formData.city}
-              onChange={(v) => setFormData({ ...formData, city: v })}
+              onChange={(v) => {
+                // The city centre places the map until a more exact area is picked
+                const c = cityCoords(places, v, formData.region);
+                setFormData({ ...formData, city: v, neighbourhood: '', latitude: c?.lat ?? null, longitude: c?.lng ?? null });
+              }}
               options={[
                 { value: '', label: 'Choose a city' },
-                ...citiesOf(providerLocation(provider).country, formData.region).map((c) => ({ value: c, label: c })),
+                ...withCurrent(cityNames(places, formData.region), formData.city).map((c) => ({ value: c, label: c })),
               ]}
               buttonClassName="min-h-[44px] px-4 rounded-xl border border-halo-border text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-gold"
             />
@@ -292,12 +309,14 @@ export default function OwnerProviderSettingsPage() {
             <label htmlFor="neighbourhood" className="block text-xs font-semibold text-stone-700">
               Neighbourhood or area *
             </label>
-            <input
+            <AreaSearch
               id="neighbourhood"
               required
               value={formData.neighbourhood}
-              onChange={(e) => setFormData({ ...formData, neighbourhood: e.target.value })}
-              placeholder="e.g. Bole, Westlands, Lekki"
+              onChange={(v) => setFormData((f) => ({ ...f, neighbourhood: v }))}
+              onPick={(place) => setFormData((f) => ({ ...f, latitude: place.lat, longitude: place.lng }))}
+              city={formData.city}
+              coords={cityCoords(places, formData.city, formData.region)}
               className="w-full px-4 py-2.5 rounded-xl border border-halo-border text-sm focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
             />
           </div>
@@ -338,14 +357,13 @@ export default function OwnerProviderSettingsPage() {
               <label htmlFor="phone" className="block text-xs text-stone-600">
                 Direct Phone *
               </label>
-              <input
+              <PhoneInput
                 id="phone"
-                type="tel"
                 required
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+251911000000"
-                className="w-full px-4 py-2.5 rounded-xl border border-halo-border text-sm focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
+                onChange={(v) => setFormData((f) => ({ ...f, phone: v }))}
+                defaultCountry={providerCountry}
+                inputClassName="w-full px-4 py-2.5 rounded-xl border border-halo-border text-sm focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
               />
             </div>
 
@@ -353,13 +371,12 @@ export default function OwnerProviderSettingsPage() {
               <label htmlFor="whatsapp" className="block text-xs text-stone-600">
                 WhatsApp Number
               </label>
-              <input
+              <PhoneInput
                 id="whatsapp"
-                type="tel"
                 value={formData.whatsapp}
-                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                placeholder="+251911000000"
-                className="w-full px-4 py-2.5 rounded-xl border border-halo-border text-sm focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
+                onChange={(v) => setFormData((f) => ({ ...f, whatsapp: v }))}
+                defaultCountry={providerCountry}
+                inputClassName="w-full px-4 py-2.5 rounded-xl border border-halo-border text-sm focus:outline-none focus:ring-2 focus:ring-halo-primary min-h-[44px]"
               />
             </div>
 

@@ -97,18 +97,20 @@ describe('Countries and regional admins', () => {
     expect(created).toMatchObject({ country: 'NG', city: 'Lagos', status: 'pending', slug: 'lagos-frames' });
   });
 
-  it('a city outside the chosen region is rejected at sign-up', () => {
-    const result = signUpProvider({
+  it('sign-up needs a region, a city and a full phone number', () => {
+    const base = {
       name: 'Ada Obi',
       email: 'ada2@lagosframes.demo',
-      phone: '+2348000000001',
+      phone: '+234 8000000001',
       businessName: 'Lagos Frames',
       country: 'NG',
       region: 'Lagos',
-      city: 'Abuja',
-      neighbourhood: 'Wuse',
-    });
-    expect(result.ok).toBe(false);
+      city: 'Lagos',
+      neighbourhood: 'Lekki',
+    };
+    expect(signUpProvider({ ...base, region: '' }).ok).toBe(false);
+    expect(signUpProvider({ ...base, city: '' }).ok).toBe(false);
+    expect(signUpProvider({ ...base, phone: '12345' }).ok).toBe(false);
   });
 
   it('upgrading older saved data adds new records and fields without overwriting edits', () => {

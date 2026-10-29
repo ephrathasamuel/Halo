@@ -12,7 +12,8 @@ import { EmptyState } from '@/components/states/EmptyState';
 import { ListingGridSkeleton } from '@/components/states/LoadingState';
 import { useHydrated } from '@/hooks/useHydrated';
 import { useCountry } from '@/hooks/useCountry';
-import { cityOptions, countryName, currencyFor, regionForCity, regionOptions, regionsOf } from '@/lib/geo';
+import { usePlaces } from '@/hooks/usePlaces';
+import { cityNames, countryName, currencyFor, regionForCity, regionNames } from '@/lib/geo';
 
 const PAGE_TITLES = {
   studio: 'Studios for hire',
@@ -56,8 +57,9 @@ function BrowseContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
-  const { country } = useCountry();
+  const { country, setCountry } = useCountry();
   const ready = hydrated && country !== null;
+  const { places } = usePlaces(country || '');
 
   const [filters, setFilters] = useState(() => filtersFromParams(searchParams));
 
@@ -91,11 +93,12 @@ function BrowseContent() {
 
   // A region or city from another country makes no sense once the country changes
   useEffect(() => {
-    if (!country || !filters.region || regionsOf(country).includes(filters.region)) return;
+    if (country === null || !filters.region) return;
+    if (country && (!places || regionNames(places).includes(filters.region))) return;
     const cleared = { ...filters, region: '', city: '', neighbourhood: '', page: 1 };
     setFilters(cleared);
     updateUrlParams(cleared);
-  }, [country, filters, updateUrlParams]);
+  }, [country, places, filters, updateUrlParams]);
 
   const handleFilterChange = (updated) => {
     setFilters(updated);
@@ -134,8 +137,8 @@ function BrowseContent() {
     : { items: [], total: 0, totalPages: 0, page: 1 };
 
   // Region, then city, then the areas providers in that city actually use
-  const regions = regionOptions(country);
-  const cities = cityOptions(country, filters.region);
+  const regions = regionNames(places);
+  const cities = cityNames(places, filters.region);
   const neighbourhoods = ready && filters.city
     ? [
         ...new Set(
@@ -166,7 +169,9 @@ function BrowseContent() {
         regions={regions}
         cities={cities}
         neighbourhoods={neighbourhoods}
-        regionForCity={(city) => regionForCity(country, city)}
+        regionForCity={(city) => regionForCity(places, city)}
+        country={country || ''}
+        onCountryChange={setCountry}
         currency={country ? currencyFor(country) : ''}
       />
 

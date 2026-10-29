@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { createOwnerBooking } from '@/lib/domain/bookings';
 import { checkEquipmentAvailability, checkStudioAvailability, minutesToTime, timeToMinutes } from '@/lib/rules/availability';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Select } from '@/components/ui/Select';
 import { btn } from '@/components/dashboard/DashboardUI';
 
@@ -113,7 +114,7 @@ export function RecordBookingForm({ listings, provider, onDone, onCancel }) {
         </div>
         <div>
           <label htmlFor="rb-phone" className="block text-xs font-medium text-halo-text-muted mb-1">Customer phone (optional)</label>
-          <input id="rb-phone" type="tel" value={form.customerPhone} onChange={(e) => set('customerPhone')(e.target.value)} className={inputClass} />
+          <PhoneInput id="rb-phone" value={form.customerPhone} onChange={set('customerPhone')} defaultCountry={provider?.country || 'ET'} inputClassName={inputClass} />
         </div>
       </div>
       <div>
