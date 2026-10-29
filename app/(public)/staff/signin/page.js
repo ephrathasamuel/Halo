@@ -9,7 +9,7 @@ import { SignInForm } from '@/components/ui/SignInForm';
 function StaffSignInContent() {
   const searchParams = useSearchParams();
   const nextParam = searchParams.get('next');
-  return <SignInForm portal="staff" returnPath={nextParam ? safeReturnPath(nextParam) : ''} nextParam={nextParam} />;
+  return <SignInForm portal="staff" returnPath={nextParam ? safeReturnPath(nextParam) : ''} nextParam={nextParam} errorCode={searchParams.get('error') || ''} />;
 }
 
 export default function StaffSignInPage() {

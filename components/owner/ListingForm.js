@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building2, Camera, Clapperboard, Plus, Tag, X } from 'lucide-react';
-import { useSession } from '@/hooks/useSession';
+import { useMyStorefront } from '@/hooks/useMyStorefront';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { providerLocation } from '@/lib/geo';
@@ -120,9 +120,10 @@ function ChipPicker({ label, suggestions, value, onChange, placeholder }) {
  */
 export function ListingForm({ initialListing = null }) {
   const router = useRouter();
-  const { session } = useSession();
   const { data: providers } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
-  const provider = providers.find((p) => p.ownerId === session?.userId);
+  const { provider: storefront } = useMyStorefront();
+  // Editing keeps the listing's own storefront; a new one goes to the storefront being managed.
+  const provider = (initialListing && providers.find((p) => p.id === initialListing.providerId)) || storefront;
 
   const init = initialListing || {};
   const [type, setType] = useState(init.type || 'studio');

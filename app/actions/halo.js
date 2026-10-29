@@ -1,6 +1,6 @@
 'use server';
 
-import { flushStore, runAs, sessionChangedTo, syncStore } from '@/lib/server/store';
+import { flushStore, runAs, syncStore } from '@/lib/server/store';
 import {
   authenticate,
   clearSessionCookie,
@@ -9,7 +9,6 @@ import {
   findUserById,
   getServerSession,
   hashPassword,
-  isDemoMode,
   passwordProblem,
   sessionFor,
   setSessionCookie,
@@ -25,7 +24,7 @@ import * as providers from '@/lib/domain/providers';
 import * as reviews from '@/lib/domain/reviews';
 import * as sales from '@/lib/domain/sales';
 import * as users from '@/lib/domain/users';
-import { signInAsDemo, signUp, signUpProvider } from '@/lib/domain/auth';
+import { signUp, signUpProvider } from '@/lib/domain/auth';
 
 /*
  * Every change in Halo goes through here. Each call:
@@ -148,19 +147,6 @@ export async function signUpProviderWithPassword(input) {
 export async function signOutAction() {
   await clearSessionCookie();
   return { ok: true };
-}
-
-/** Demo personas: only when HALO_DEMO=on (for presenting the project). */
-export async function demoSignIn(userId) {
-  if (!isDemoMode()) return { ok: false, error: 'Demo sign-in is switched off' };
-  return withRequest(async () => {
-    const result = signInAsDemo(userId);
-    if (!result.ok) return result;
-    const user = findUserById(sessionChangedTo()?.userId || userId);
-    if (!user) return { ok: false, error: 'User not found' };
-    await setSessionCookie(user);
-    return { ok: true, session: sessionFor(user) };
-  });
 }
 
 export async function changePassword({ currentPassword, newPassword } = {}) {

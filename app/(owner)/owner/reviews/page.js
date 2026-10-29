@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useSession } from '@/hooks/useSession';
+import { useMyStorefront } from '@/hooks/useMyStorefront';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatDate } from '@/lib/format';
@@ -11,11 +11,11 @@ import { StarRating } from '@/components/ui/StarRating';
 import { replyToReview } from '@/lib/client/domain';
 
 export default function OwnerReviewsPage() {
-  const { session } = useSession();
+  const { provider: storefront } = useMyStorefront();
   const { data: reviews, refresh } = useStorageSync(STORAGE_KEYS.REVIEWS, []);
   const { data: users } = useStorageSync(STORAGE_KEYS.USERS, []);
 
-  const myReviews = reviews.filter((r) => r.ownerId === session?.userId);
+  const myReviews = reviews.filter((r) => r.providerId === storefront?.id);
   const userMap = new Map(users.map((u) => [u.id, u]));
 
   const [activeReplyId, setActiveReplyId] = useState(null);

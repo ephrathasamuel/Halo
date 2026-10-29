@@ -104,7 +104,7 @@ export default function AccountPage() {
           </button>
         </form>
       </Panel>
-      <ChangePasswordPanel />
+      <ChangePasswordPanel hasPassword={user?.hasPassword !== false} />
     </div>
   );
 }

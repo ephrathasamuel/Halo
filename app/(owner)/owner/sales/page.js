@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { MessageCircle, Phone, Plus, ShoppingBag } from 'lucide-react';
-import { useSession } from '@/hooks/useSession';
+import { useMyStorefront } from '@/hooks/useMyStorefront';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatMoney, relativeTime } from '@/lib/format';
@@ -14,17 +14,17 @@ import { updatePurchaseRequest } from '@/lib/client/domain';
 const OPEN = ['requested', 'accepted'];
 
 export default function OwnerSalesPage() {
-  const { session } = useSession();
+  const { provider: storefront } = useMyStorefront();
   const { data: purchases, refresh } = useStorageSync(STORAGE_KEYS.PURCHASES, []);
   const { data: listings } = useStorageSync(STORAGE_KEYS.LISTINGS, []);
   const [notice, setNotice] = useState(null);
 
   const mine = purchases
-    .filter((p) => p.ownerId === session?.userId)
+    .filter((p) => p.providerId === storefront?.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const open = mine.filter((p) => OPEN.includes(p.status));
   const closed = mine.filter((p) => !OPEN.includes(p.status));
-  const forSale = listings.filter((l) => l.ownerId === session?.userId && l.type === 'sale');
+  const forSale = listings.filter((l) => l.providerId === storefront?.id && l.type === 'sale');
 
   const act = async (request, target, text) => {
     const res = await updatePurchaseRequest(request.id, target);

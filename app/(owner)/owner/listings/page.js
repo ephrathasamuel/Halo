@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { CalendarDays, Eye, Pencil, Plus } from 'lucide-react';
-import { useSession } from '@/hooks/useSession';
+import { useMyStorefront } from '@/hooks/useMyStorefront';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatPrice, LISTING_TYPE_LABELS } from '@/lib/format';
@@ -30,9 +30,9 @@ function priceLine(item) {
 }
 
 export default function OwnerListingsPage() {
-  const { session } = useSession();
+  const { provider: storefront } = useMyStorefront();
   const { data: listings, refresh } = useStorageSync(STORAGE_KEYS.LISTINGS, []);
-  const myListings = listings.filter((l) => l.ownerId === session?.userId);
+  const myListings = listings.filter((l) => l.providerId === storefront?.id);
 
   const [typeFilter, setTypeFilter] = useState('all');
   const [notice, setNotice] = useState(null);

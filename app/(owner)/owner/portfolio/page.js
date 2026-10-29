@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useSession } from '@/hooks/useSession';
+import { useMyStorefront } from '@/hooks/useMyStorefront';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { SafeImage } from '@/components/ui/SafeImage';
@@ -14,11 +14,10 @@ import { deletePortfolioItem, savePortfolioItem } from '@/lib/client/domain';
 const EVENT_TYPES = ['Wedding', 'Engagement', 'Fashion', 'Corporate', 'Music', 'Documentary', 'Commercial', 'Other'];
 
 export default function OwnerPortfolioPage() {
-  const { session } = useSession();
-  const { data: providers } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
+  const { provider: storefront } = useMyStorefront();
   const { data: portfolio, refresh } = useStorageSync(STORAGE_KEYS.PORTFOLIO, []);
 
-  const provider = providers.find((p) => p.ownerId === session?.userId);
+  const provider = storefront;
   const myItems = provider ? portfolio.filter((item) => item.providerId === provider.id) : [];
 
   const [isModalOpen, setIsModalOpen] = useState(false);

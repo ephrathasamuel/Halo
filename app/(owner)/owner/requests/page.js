@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useSession } from '@/hooks/useSession';
+import { useMyStorefront } from '@/hooks/useMyStorefront';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatDate, formatMoney } from '@/lib/format';
@@ -13,12 +13,12 @@ import { currencyOfProvider } from '@/lib/domain/providers';
 const STATUS_COLORS = STATUS_TONES;
 
 export default function OwnerRequestsPage() {
-  const { session } = useSession();
+  const { provider: storefront } = useMyStorefront();
   const { data: eventRequests } = useStorageSync(STORAGE_KEYS.EVENT_REQUESTS, []);
   const { data: users } = useStorageSync(STORAGE_KEYS.USERS, []);
   const { data: quotes } = useStorageSync(STORAGE_KEYS.QUOTES, []);
 
-  const myRequests = eventRequests.filter((e) => e.ownerId === session?.userId);
+  const myRequests = eventRequests.filter((e) => e.providerId === storefront?.id);
   const userMap = new Map(users.map((u) => [u.id, u]));
 
   const [statusFilter, setStatusFilter] = useState('all');

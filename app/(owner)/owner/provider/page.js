@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSession } from '@/hooks/useSession';
+import { useMyStorefront } from '@/hooks/useMyStorefront';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { cityCoords, cityNames, countryName, providerLocation, regionNames } from '@/lib/geo';
@@ -19,9 +19,9 @@ import { saveProvider } from '@/lib/client/domain';
 const withCurrent = (list, current) => (current && !list.includes(current) ? [current, ...list] : list);
 
 export default function OwnerProviderSettingsPage() {
-  const { session } = useSession();
-  const { data: providers, refresh } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
-  const provider = providers.find((p) => p.ownerId === session?.userId);
+  const { provider: storefront } = useMyStorefront();
+  const { refresh } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
+  const provider = storefront;
   const providerCountry = provider ? providerLocation(provider).country : '';
   const { places } = usePlaces(providerCountry);
 

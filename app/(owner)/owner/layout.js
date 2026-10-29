@@ -18,6 +18,7 @@ import {
 import { Header } from '@/components/ui/Header';
 import { RequireRole } from '@/components/ui/RequireRole';
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
+import { StorefrontSwitcher } from '@/components/dashboard/StorefrontSwitcher';
 
 const ownerLinks = [
   { href: '/owner', label: 'Overview', icon: LayoutDashboard, exact: true },
@@ -54,6 +55,7 @@ export default function OwnerLayout({ children }) {
           </Link>
         }
       >
+        <StorefrontSwitcher />
         {children}
       </DashboardShell>
     </RequireRole>

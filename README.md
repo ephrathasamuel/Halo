@@ -28,18 +28,15 @@ npm run build
 
 ---
 
-## Pre-Seeded Demo Personas
+## Accounts and starting data
 
-On first start the server fills its database with this demo catalogue. Real accounts sign in with a password (customers at `/signin`, admins and studio owners at `/staff/signin`). The personas below have no password: with `HALO_DEMO=on` the sign-in pages show them as one-click demo accounts (for presenting the project); on a real site, leave `HALO_DEMO` empty and they cannot sign in.
+On first start the server fills its database with the storefront catalogue only: the studios, their listings and portfolio photos. There are no made-up customers, bookings, reviews, quotes, disputes or announcements, and the storefronts' contact details start empty.
 
-| Persona | Role | Seed Email | Access & Permissions |
-|---------|------|------------|-----------------------|
-| **Platform Administrator** | `admin` | `admin@halo.demo` | Provider & listing moderation, user governance, dispute resolution, platform commission auditing, and announcements broadcasting. |
-| **Meron Tadesse** (Flagship) | `owner` | `meron@blight.demo` | Owner of **B Light** (`/studios/b-light`). Manages studio/equipment listings, turnover buffers, event filming quote composer, calendar, reviews, and earnings. |
-| **Dawit Alemu** | `owner`, `renter` | `dawit@merkato.demo` | Dual-role owner of **Merkato Frames** in Arada and active customer renter. |
-| **Abebe Kebede** | `renter` | `abebe@renter.demo` | Creative customer. Has booking history, pending requests, and reviews. |
-| **Sara Hailu** | `renter` | `sara@renter.demo` | Creative customer with active bookings, quote negotiations, and an open equipment dispute. |
-| **Tekle Woldemariam** | `renter` (*suspended*) | `tekle@suspended.demo` | Suspended demo account illustrating access-block security guardrails. |
+- **The admin account** comes from `HALO_ADMIN_EMAIL` / `HALO_ADMIN_PASSWORD` and signs in at `/staff/signin`. It also owns every storefront whose owner has no account (all of the starting storefronts), so it can edit them, fill in real contact details, or hand them over.
+- **Customers** create an account at `/signup` and sign in at `/signin`.
+- **Studio owners** register their studio at `/signup` and sign in at `/staff/signin` once it is approved.
+- **Regional admins** are created by the admin at `/admin/team` with a first password.
+- **Continue with Google** (both sign-in pages) signs in the Halo account with the same verified email, or makes a new customer account. Staff accounts are never created through Google. A Google-only account can set a password later in its profile. Turn it on in Supabase: Authentication → Sign In / Providers → Google (client ID and secret from a Google Cloud OAuth client whose redirect URI is `https://<project>.supabase.co/auth/v1/callback`), and add `http://localhost:3000/auth/callback` and `https://<your-site>/auth/callback` under Authentication → URL Configuration → Redirect URLs.
 
 ---
 

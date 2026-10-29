@@ -8,7 +8,7 @@ import { SignInForm } from '@/components/ui/SignInForm';
 function SignInContent() {
   const searchParams = useSearchParams();
   const nextParam = searchParams.get('next');
-  return <SignInForm portal="customer" returnPath={safeReturnPath(nextParam)} nextParam={nextParam} />;
+  return <SignInForm portal="customer" returnPath={safeReturnPath(nextParam)} nextParam={nextParam} errorCode={searchParams.get('error') || ''} />;
 }
 
 export default function SignInPage() {

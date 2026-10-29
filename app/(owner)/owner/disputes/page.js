@@ -1,20 +1,20 @@
 'use client';
 
-import { useSession } from '@/hooks/useSession';
+import { useMyStorefront } from '@/hooks/useMyStorefront';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatDate } from '@/lib/format';
 import { EmptyState } from '@/components/states/EmptyState';
 
 export default function OwnerDisputesPage() {
-  const { session } = useSession();
+  const { provider: storefront } = useMyStorefront();
   const { data: disputes } = useStorageSync(STORAGE_KEYS.DISPUTES, []);
   const { data: bookings } = useStorageSync(STORAGE_KEYS.BOOKINGS, []);
   const { data: events } = useStorageSync(STORAGE_KEYS.EVENT_REQUESTS, []);
   const { data: users } = useStorageSync(STORAGE_KEYS.USERS, []);
 
-  const myBookingIds = new Set(bookings.filter((b) => b.ownerId === session?.userId).map((b) => b.id));
-  const myEventIds = new Set(events.filter((e) => e.ownerId === session?.userId).map((e) => e.id));
+  const myBookingIds = new Set(bookings.filter((b) => b.providerId === storefront?.id).map((b) => b.id));
+  const myEventIds = new Set(events.filter((e) => e.providerId === storefront?.id).map((e) => e.id));
   const userMap = new Map(users.map((u) => [u.id, u]));
 
   const myDisputes = disputes.filter(

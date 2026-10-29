@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useSession } from '@/hooks/useSession';
+import { useMyStorefront } from '@/hooks/useMyStorefront';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatMoney, formatDate, formatTime } from '@/lib/format';
 import { EmptyState } from '@/components/states/EmptyState';
 import { STATUS_TONES, statusLabel } from '@/lib/status';
-import { currencyOfProvider, currencyOfCurrentOwner } from '@/lib/domain/providers';
+import { currencyOfProvider } from '@/lib/domain/providers';
 import { Plus } from 'lucide-react';
 import { Panel, btn } from '@/components/dashboard/DashboardUI';
 import { RecordBookingForm } from '@/components/owner/RecordBookingForm';
@@ -17,15 +17,14 @@ import { transitionBooking } from '@/lib/client/domain';
 const STATUS_BADGES = STATUS_TONES;
 
 export default function OwnerBookingsPage() {
-  const { session } = useSession();
+  const { provider: storefront } = useMyStorefront();
   const { data: bookings, refresh } = useStorageSync(STORAGE_KEYS.BOOKINGS, []);
   const { data: users } = useStorageSync(STORAGE_KEYS.USERS, []);
   const { data: listings } = useStorageSync(STORAGE_KEYS.LISTINGS, []);
-  const { data: providers } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
-  const myProvider = providers.find((p) => p.ownerId === session?.userId);
+  const myProvider = storefront;
   const [recording, setRecording] = useState(false);
 
-  const myBookings = bookings.filter((b) => b.ownerId === session?.userId);
+  const myBookings = bookings.filter((b) => b.providerId === storefront?.id);
   const userMap = new Map(users.map((u) => [u.id, u]));
 
   const [statusFilter, setStatusFilter] = useState('all');
@@ -77,7 +76,7 @@ export default function OwnerBookingsPage() {
       {recording && myProvider && (
         <Panel title="Record a booking" description="For walk-ins and bookings taken by phone. It blocks the time like an online booking.">
           <RecordBookingForm
-            listings={listings.filter((l) => l.ownerId === session?.userId)}
+            listings={listings.filter((l) => l.providerId === storefront?.id)}
             provider={myProvider}
             onCancel={() => setRecording(false)}
             onDone={(b) => {
@@ -197,7 +196,7 @@ export default function OwnerBookingsPage() {
                       {b.items.map((item, idx) => (
                         <div key={idx} className="flex justify-between">
                           <span>{item.qty}x {item.type}</span>
-                          <span className="font-semibold">{formatMoney(item.lineTotal, currencyOfCurrentOwner())}</span>
+                          <span className="font-semibold">{formatMoney(item.lineTotal, currencyOfProvider(storefront?.id))}</span>
                         </div>
                       ))}
                     </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Plus, Store } from 'lucide-react';
-import { useSession } from '@/hooks/useSession';
+import { useMyStorefront } from '@/hooks/useMyStorefront';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatMoney, formatDate, formatHours, formatPrice, formatTime } from '@/lib/format';
@@ -15,17 +15,16 @@ import { transitionBooking } from '@/lib/client/domain';
 const EARNING_STATUSES = ['confirmed', 'in_progress', 'completed', 'reviewed'];
 
 export default function OwnerOverviewPage() {
-  const { session } = useSession();
-  const { data: providers } = useStorageSync(STORAGE_KEYS.PROVIDERS, []);
+  const { provider: storefront } = useMyStorefront();
   const { data: listings } = useStorageSync(STORAGE_KEYS.LISTINGS, []);
   const { data: bookings } = useStorageSync(STORAGE_KEYS.BOOKINGS, []);
   const { data: users } = useStorageSync(STORAGE_KEYS.USERS, []);
 
   const [notice, setNotice] = useState(null);
 
-  const provider = providers.find((p) => p.ownerId === session?.userId);
-  const myBookings = bookings.filter((b) => b.ownerId === session?.userId);
-  const myListings = listings.filter((l) => l.ownerId === session?.userId);
+  const provider = storefront;
+  const myBookings = bookings.filter((b) => b.providerId === storefront?.id);
+  const myListings = listings.filter((l) => l.providerId === storefront?.id);
   const userMap = new Map(users.map((u) => [u.id, u]));
 
   const pendingRequests = myBookings.filter((b) => b.status === 'requested');

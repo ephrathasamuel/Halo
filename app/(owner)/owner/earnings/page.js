@@ -1,19 +1,19 @@
 'use client';
 
-import { useSession } from '@/hooks/useSession';
+import { useMyStorefront } from '@/hooks/useMyStorefront';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatMoney, formatDate } from '@/lib/format';
 import { exportCsv, downloadCsv } from '@/lib/csv';
 import { OwnerEarningsChart } from '@/components/charts/OwnerEarningsChart';
 import { EmptyState } from '@/components/states/EmptyState';
-import { currencyOfProvider, currencyOfCurrentOwner } from '@/lib/domain/providers';
+import { currencyOfProvider } from '@/lib/domain/providers';
 
 export default function OwnerEarningsPage() {
-  const { session } = useSession();
+  const { provider: storefront } = useMyStorefront();
   const { data: bookings } = useStorageSync(STORAGE_KEYS.BOOKINGS, []);
 
-  const myBookings = bookings.filter((b) => b.ownerId === session?.userId);
+  const myBookings = bookings.filter((b) => b.providerId === storefront?.id);
   const eligibleBookings = myBookings.filter((b) =>
     ['confirmed', 'in_progress', 'completed', 'reviewed'].includes(b.status)
   );
@@ -97,25 +97,25 @@ export default function OwnerEarningsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-white border border-halo-border space-y-1">
           <p className="text-xs font-semibold text-emerald-600">Net Owner Earnings</p>
-          <p className="text-2xl font-semibold text-halo-ink">{formatMoney(totalNetEarnings, currencyOfCurrentOwner())}</p>
+          <p className="text-2xl font-semibold text-halo-ink">{formatMoney(totalNetEarnings, currencyOfProvider(storefront?.id))}</p>
           <p className="text-[11px] text-halo-text-muted">90% of subtotal</p>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-halo-border space-y-1">
           <p className="text-xs font-semibold text-halo-text-muted">Gross Subtotal</p>
-          <p className="text-2xl font-semibold text-halo-ink">{formatMoney(totalSubtotal, currencyOfCurrentOwner())}</p>
+          <p className="text-2xl font-semibold text-halo-ink">{formatMoney(totalSubtotal, currencyOfProvider(storefront?.id))}</p>
           <p className="text-[11px] text-halo-text-muted">All confirmed & completed sessions</p>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-halo-border space-y-1">
           <p className="text-xs font-semibold text-amber-600">Platform Commission</p>
-          <p className="text-2xl font-semibold text-amber-700">{formatMoney(totalPlatformFees, currencyOfCurrentOwner())}</p>
+          <p className="text-2xl font-semibold text-amber-700">{formatMoney(totalPlatformFees, currencyOfProvider(storefront?.id))}</p>
           <p className="text-[11px] text-halo-text-muted">10% platform fee</p>
         </div>
 
         <div className="p-5 rounded-2xl bg-white border border-halo-border space-y-1">
           <p className="text-xs font-semibold text-blue-600">Security Deposits</p>
-          <p className="text-2xl font-semibold text-blue-700">{formatMoney(totalDeposits, currencyOfCurrentOwner())}</p>
+          <p className="text-2xl font-semibold text-blue-700">{formatMoney(totalDeposits, currencyOfProvider(storefront?.id))}</p>
           <p className="text-[11px] text-halo-text-muted">Refundable equipment deposits</p>
         </div>
       </div>
@@ -129,7 +129,7 @@ export default function OwnerEarningsPage() {
           </p>
         </div>
 
-        <OwnerEarningsChart data={chartData} />
+        <OwnerEarningsChart data={chartData} currency={currencyOfProvider(storefront?.id)} />
       </div>
 
       {/* Accessible Financial Table */}

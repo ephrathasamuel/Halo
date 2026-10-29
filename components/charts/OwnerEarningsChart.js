@@ -12,9 +12,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { formatMoney } from '@/lib/format';
-import { currencyOfCurrentOwner } from '@/lib/domain/providers';
 
-export function OwnerEarningsChart({ data = [] }) {
+export function OwnerEarningsChart({ data = [], currency = 'ETB' }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -42,10 +41,10 @@ export function OwnerEarningsChart({ data = [] }) {
           <YAxis
             tick={{ fill: '#64748b', fontSize: 11 }}
             tickLine={false}
-            tickFormatter={(val) => `${currencyOfCurrentOwner()} ${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
+            tickFormatter={(val) => `${currency} ${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
           />
           <Tooltip
-            formatter={(value) => [formatMoney(Number(value), currencyOfCurrentOwner()), '']}
+            formatter={(value) => [formatMoney(Number(value), currency), '']}
             contentStyle={{
               backgroundColor: '#1e293b',
               borderRadius: '0.75rem',

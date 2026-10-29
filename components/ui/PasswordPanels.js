@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { adminSetPassword, changePassword } from '@/app/actions/halo';
+import { reloadData } from '@/lib/client/cache';
 import { Notice, Panel, btn } from '@/components/dashboard/DashboardUI';
 
 const inputClass =
@@ -27,8 +28,11 @@ function Field({ id, label, value, onChange, autoComplete, checkLength = true })
   );
 }
 
-/** "Change password" on the account page (signs out the account's other devices). */
-export function ChangePasswordPanel() {
+/**
+ * "Change password" on the account page (signs out the account's other devices).
+ * Accounts made with Google have no password until they set one here.
+ */
+export function ChangePasswordPanel({ hasPassword = true }) {
   const [form, setForm] = useState({ current: '', next: '', repeat: '' });
   const [notice, setNotice] = useState(null);
   const [pending, setPending] = useState(false);
@@ -44,27 +48,38 @@ export function ChangePasswordPanel() {
     const result = await changePassword({ currentPassword: form.current, newPassword: form.next });
     setPending(false);
     if (result?.ok) {
-      setNotice({ tone: 'success', text: 'Password changed. Your other devices have been signed out.' });
+      setNotice({
+        tone: 'success',
+        text: hasPassword
+          ? 'Password changed. Your other devices have been signed out.'
+          : 'Password set. You can now also sign in with your email and this password.',
+      });
       setForm({ current: '', next: '', repeat: '' });
+      reloadData();
     } else {
       setNotice({ tone: 'error', text: result?.error || 'Could not change the password' });
     }
   }
 
   return (
-    <Panel title="Password">
+    <Panel
+      title="Password"
+      description={hasPassword ? undefined : 'You sign in with Google. Set a password to also sign in with your email.'}
+    >
       {notice && (
         <Notice tone={notice.tone} onDismiss={() => setNotice(null)}>
           {notice.text}
         </Notice>
       )}
       <form onSubmit={submit} className="mt-4 grid gap-4 md:grid-cols-3">
-        <Field id="current-password" label="Current password" value={form.current} onChange={set('current')} autoComplete="current-password" checkLength={false} />
+        {hasPassword && (
+          <Field id="current-password" label="Current password" value={form.current} onChange={set('current')} autoComplete="current-password" checkLength={false} />
+        )}
         <Field id="new-password" label="New password" value={form.next} onChange={set('next')} autoComplete="new-password" />
         <Field id="repeat-password" label="Repeat new password" value={form.repeat} onChange={set('repeat')} autoComplete="new-password" />
         <div className="md:col-span-3">
           <button type="submit" disabled={pending} className={btn.primary}>
-            {pending ? 'Saving…' : 'Change password'}
+            {pending ? 'Saving…' : hasPassword ? 'Change password' : 'Set password'}
           </button>
         </div>
       </form>
