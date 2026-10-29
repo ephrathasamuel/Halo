@@ -195,3 +195,32 @@ export async function createRegionalAdminWithPassword(input) {
     return clean(result);
   });
 }
+
+/**
+ * An admin sets a new password for someone who forgot theirs (Halo has no
+ * email service yet). Global admins: anyone except another global admin.
+ * Regional admins: non-admin accounts in their own country. Signs the person
+ * out everywhere.
+ */
+export async function adminSetPassword({ userId, newPassword } = {}) {
+  return withRequest(async (session) => {
+    const roles = session?.roles || [];
+    const isGlobal = roles.includes('admin');
+    const isRegional = roles.includes('regional_admin');
+    if (!isGlobal && !isRegional) return { ok: false, error: 'Only admins can do this' };
+    const target = findUserById(userId);
+    if (!target) return { ok: false, error: 'User not found' };
+    if (target.id === session.userId) return { ok: false, error: 'Change your own password in your account' };
+    if (target.roles?.includes('admin')) return { ok: false, error: "Another global admin's password can't be set here" };
+    if (!isGlobal) {
+      const sameCountry = (target.country || 'ET') === session.adminScope?.country;
+      if (!sameCountry || target.roles?.includes('regional_admin')) {
+        return { ok: false, error: 'You can only do this for customers and providers in your country' };
+      }
+    }
+    const problem = passwordProblem(newPassword);
+    if (problem) return { ok: false, error: problem };
+    updateUser(target.id, { passwordHash: hashPassword(newPassword), sessionVersion: (target.sessionVersion || 1) + 1 });
+    return { ok: true };
+  });
+}

@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { demoSignIn, signInWithPassword } from '@/app/actions/halo';
-import { DATA_EVENT, isDemo, reloadData } from '@/lib/client/cache';
-import { readStorage } from '@/lib/storage/readStorage';
-import { STORAGE_KEYS } from '@/lib/storage/keys';
+import { DATA_EVENT, demoUsers, isDemo, reloadData } from '@/lib/client/cache';
 import { AuthCard, authInputClass } from '@/components/ui/AuthCard';
 
 const STAFF_ROLES = ['admin', 'regional_admin', 'owner'];
@@ -34,11 +32,8 @@ export function SignInForm({ portal, returnPath, nextParam }) {
 
   useEffect(() => {
     const read = () => {
-      const { data: users } = readStorage(STORAGE_KEYS.USERS, []);
-      const wanted = (u) =>
-        u.status !== 'suspended' &&
-        (portal === 'staff' ? u.roles?.some((r) => STAFF_ROLES.includes(r)) : u.roles?.includes('renter'));
-      setDemo({ on: isDemo(), users: users.filter((u) => String(u.email).endsWith('.demo')).filter(wanted) });
+      const wanted = (u) => (portal === 'staff' ? u.roles?.some((r) => STAFF_ROLES.includes(r)) : u.roles?.includes('renter'));
+      setDemo({ on: isDemo(), users: demoUsers().filter(wanted) });
     };
     read();
     window.addEventListener(DATA_EVENT, read);

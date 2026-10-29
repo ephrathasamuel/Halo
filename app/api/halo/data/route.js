@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { readCollection, syncStore } from '@/lib/server/store';
-import { ensureEnvAdmin, getServerSession, isDemoMode, publicUser } from '@/lib/server/auth';
+import { ensureEnvAdmin, getServerSession, isDemoMode } from '@/lib/server/auth';
+import { visibleData } from '@/lib/server/visibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,21 +11,24 @@ const SHARED_KEYS = Object.values(STORAGE_KEYS).filter(
 );
 
 /**
- * Everything the browser shows, loaded from the server.
- * Passwords and session details never leave the server. (Stage 2 narrows each
- * collection to what the signed-in role may see.)
+ * The data this visitor may see (lib/server/visibility.js), loaded from the
+ * server. Passwords and session details never leave the server.
  */
 export async function GET() {
   await syncStore();
   ensureEnvAdmin();
   const session = await getServerSession();
-  const data = {};
-  for (const key of SHARED_KEYS) {
-    const list = readCollection(key);
-    data[key] = key === STORAGE_KEYS.USERS ? list.map(publicUser) : list;
-  }
+  const all = {};
+  for (const key of SHARED_KEYS) all[key] = readCollection(key);
+  const data = visibleData(session, all);
+  // Demo mode only: the one-click personas (seeded accounts without a password).
+  const demoUsers = isDemoMode()
+    ? all[STORAGE_KEYS.USERS]
+        .filter((u) => String(u.email).endsWith('.demo') && !u.passwordHash && u.status !== 'suspended')
+        .map((u) => ({ id: u.id, name: u.name, roles: u.roles }))
+    : [];
   return NextResponse.json(
-    { session, demo: isDemoMode(), data },
+    { session, demo: isDemoMode(), demoUsers, data },
     { headers: { 'Cache-Control': 'private, no-store' } }
   );
 }

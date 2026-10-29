@@ -14,6 +14,7 @@ import { UserAvatar } from '@/components/ui/ProviderLogo';
 import { Select } from '@/components/ui/Select';
 import { Notice, PageHeader, Panel, btn } from '@/components/dashboard/DashboardUI';
 import { updateProfile } from '@/lib/client/domain';
+import { ChangePasswordPanel } from '@/components/ui/PasswordPanels';
 
 const inputClass =
   'w-full px-3.5 min-h-[44px] rounded-xl border border-halo-border-strong bg-halo-surface text-[15px] text-halo-ink focus:border-halo-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-gold';
@@ -103,6 +104,7 @@ export default function AccountPage() {
           </button>
         </form>
       </Panel>
+      <ChangePasswordPanel />
     </div>
   );
 }

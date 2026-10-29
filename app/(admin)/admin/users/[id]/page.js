@@ -7,6 +7,7 @@ import { formatDate, formatMoney } from '@/lib/format';
 import { currencyOfProvider } from '@/lib/domain/providers';
 import { BackButton } from '@/components/ui/BackButton';
 import { reinstateUser, suspendUser } from '@/lib/client/domain';
+import { AdminSetPasswordPanel } from '@/components/ui/PasswordPanels';
 
 export default function AdminUserDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -122,6 +123,7 @@ export default function AdminUserDetailPage({ params }) {
           )}
         </div>
       </div>
+      {!user.roles?.includes('admin') && <AdminSetPasswordPanel user={user} />}
 
       {/* User Bookings History */}
       <div className="bg-white rounded-2xl border border-halo-border p-6 space-y-4">
