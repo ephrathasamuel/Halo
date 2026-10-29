@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { createReview } from '@/lib/domain/reviews';
 import { formatDate } from '@/lib/format';
 import { StarRating, StarRatingInput } from '@/components/ui/StarRating';
 import { BackButton } from '@/components/ui/BackButton';
+import { createReview } from '@/lib/client/domain';
 
 export default function BookingReviewPage({ params }) {
   const resolvedParams = use(params);
@@ -116,12 +116,12 @@ export default function BookingReviewPage({ params }) {
     );
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setFeedback({ type: '', text: '' });
     setIsSubmitting(true);
 
-    const res = createReview({
+    const res = await createReview({
       targetType: 'booking',
       targetId: booking.id,
       rating,

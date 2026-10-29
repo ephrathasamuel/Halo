@@ -1,36 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { initializeDemoData } from '@/lib/storage/initializeDemoData';
+import { useEffect } from 'react';
+import { installClientCache, reloadData } from '@/lib/client/cache';
 
 /**
- * Client component that initializes demo data on first render.
- * Shows recovery messages if corrupted data was detected.
+ * Loads Halo's data from the server when the app starts, and keeps it fresh:
+ * again when the tab comes back into view, and every 20 seconds while it is
+ * open (so a booking someone else made shows up).
  */
 export function AppInitializer() {
-  const [recoveryMessages, setRecoveryMessages] = useState([]);
-
   useEffect(() => {
-    const messages = initializeDemoData();
-    if (messages.length > 0) {
-      setRecoveryMessages(messages);
-      // Auto-dismiss after 5 seconds
-      const timer = setTimeout(() => setRecoveryMessages([]), 5000);
-      return () => clearTimeout(timer);
-    }
+    installClientCache();
+    reloadData();
+    const onVisible = () => document.visibilityState === 'visible' && reloadData();
+    document.addEventListener('visibilitychange', onVisible);
+    const timer = setInterval(() => document.visibilityState === 'visible' && reloadData(), 20000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      clearInterval(timer);
+    };
   }, []);
 
-  if (recoveryMessages.length === 0) return null;
-
-  return (
-    <div
-      className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-amber-50 border border-amber-200 rounded-lg p-4 shadow-lg max-w-md"
-      role="alert"
-    >
-      <p className="font-semibold text-amber-800 mb-1">Saved data reset</p>
-      {recoveryMessages.map((msg, i) => (
-        <p key={i} className="text-sm text-amber-700">{msg}</p>
-      ))}
-    </div>
-  );
+  return null;
 }

@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { getBookingById, cancelBooking } from '@/lib/domain/bookings';
+import { getBookingById } from '@/lib/domain/bookings';
 import { formatMoney, formatDate, formatTime } from '@/lib/format';
 import { useSession } from '@/hooks/useSession';
 import { readStorage } from '@/lib/storage/readStorage';
@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/states/EmptyState';
 import { STATUS_TONES, statusLabel } from '@/lib/status';
 import { currencyOfProvider } from '@/lib/domain/providers';
 import { BackButton } from '@/components/ui/BackButton';
+import { cancelBooking } from '@/lib/client/domain';
 
 export default function BookingDetailPage() {
   const { id } = useParams();
@@ -68,11 +69,11 @@ export default function BookingDetailPage() {
   const isRenter = booking.renterId === session.userId;
   const isOwner = booking.ownerId === session.userId;
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     setActionError('');
     setSuccessMessage('');
 
-    const res = cancelBooking(booking.id);
+    const res = await cancelBooking(booking.id);
     if (!res.ok) {
       setActionError(res.error || 'Failed to cancel booking');
       return;

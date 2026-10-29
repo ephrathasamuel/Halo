@@ -6,10 +6,10 @@ import Link from 'next/link';
 import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { submitEventRequest } from '@/lib/domain/events';
 import { formatMoney } from '@/lib/format';
 import { currencyOfProvider } from '@/lib/domain/providers';
 import { BackButton } from '@/components/ui/BackButton';
+import { submitEventRequest } from '@/lib/client/domain';
 
 const EVENT_TYPES = ['Wedding', 'Engagement', 'Corporate Event', 'Birthday', 'Music Video', 'Commercial', 'Conference', 'Other'];
 
@@ -71,14 +71,14 @@ export default function RequestQuotePage({ params }) {
     );
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setIsSubmitting(true);
 
     const listingId = selectedListingId || (serviceListings[0]?.id || '');
 
-    const res = submitEventRequest({
+    const res = await submitEventRequest({
       providerId: provider.id,
       listingId,
       eventType,

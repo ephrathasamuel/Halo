@@ -7,9 +7,9 @@ import Link from 'next/link';
 import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { savePortfolioItem, deletePortfolioItem } from '@/lib/domain/providers';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { EmptyState } from '@/components/states/EmptyState';
+import { deletePortfolioItem, savePortfolioItem } from '@/lib/client/domain';
 
 const EVENT_TYPES = ['Wedding', 'Engagement', 'Fashion', 'Corporate', 'Music', 'Documentary', 'Commercial', 'Other'];
 
@@ -52,7 +52,7 @@ export default function OwnerPortfolioPage() {
     setIsModalOpen(true);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!provider) return;
 
@@ -64,7 +64,7 @@ export default function OwnerPortfolioPage() {
       mediaUrl: formData.mediaUrl,
     };
 
-    const res = savePortfolioItem(payload);
+    const res = await savePortfolioItem(payload);
     if (!res.ok) {
       setStatusMessage({ type: 'error', text: res.error || 'Failed to save portfolio item' });
       return;
@@ -75,9 +75,9 @@ export default function OwnerPortfolioPage() {
     refresh();
   };
 
-  const handleDelete = (itemId) => {
+  const handleDelete = async (itemId) => {
     if (!confirm('Are you sure you want to remove this portfolio piece?')) return;
-    const res = deletePortfolioItem(itemId);
+    const res = await deletePortfolioItem(itemId);
     if (!res.ok) {
       alert(res.error || 'Failed to delete item');
       return;

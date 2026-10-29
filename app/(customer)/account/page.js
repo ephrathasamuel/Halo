@@ -8,12 +8,12 @@ import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { COUNTRIES } from '@/lib/geo';
 import { PhoneInput } from '@/components/ui/PhoneInput';
-import { updateProfile } from '@/lib/domain/users';
 import { EmptyState } from '@/components/states/EmptyState';
 import { ImageUploader } from '@/components/ui/ImageUploader';
 import { UserAvatar } from '@/components/ui/ProviderLogo';
 import { Select } from '@/components/ui/Select';
 import { Notice, PageHeader, Panel, btn } from '@/components/dashboard/DashboardUI';
+import { updateProfile } from '@/lib/client/domain';
 
 const inputClass =
   'w-full px-3.5 min-h-[44px] rounded-xl border border-halo-border-strong bg-halo-surface text-[15px] text-halo-ink focus:border-halo-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-gold';
@@ -44,9 +44,9 @@ export default function AccountPage() {
   }
   if (!form) return <div className="min-h-[50vh]" aria-busy="true" />;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = updateProfile(form);
+    const res = await updateProfile(form);
     setNotice(res.ok ? { tone: 'success', text: 'Profile saved.' } : { tone: 'error', text: res.error });
   };
 

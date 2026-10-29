@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { saveProvider } from '@/lib/domain/providers';
 import { cityCoords, cityNames, countryName, providerLocation, regionNames } from '@/lib/geo';
 import { usePlaces } from '@/hooks/usePlaces';
 import { AreaSearch } from '@/components/ui/AreaSearch';
@@ -14,6 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { ImageUploader } from '@/components/ui/ImageUploader';
 import { ProviderLogo } from '@/components/ui/ProviderLogo';
 import { dominantColor } from '@/lib/media';
+import { saveProvider } from '@/lib/client/domain';
 
 /** Keeps a saved value selectable even if it isn't in today's list */
 const withCurrent = (list, current) => (current && !list.includes(current) ? [current, ...list] : list);
@@ -78,7 +78,7 @@ export default function OwnerProviderSettingsPage() {
     );
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setStatusMessage({ type: '', text: '' });
     setIsSubmitting(true);
@@ -104,7 +104,7 @@ export default function OwnerProviderSettingsPage() {
       },
     };
 
-    const res = saveProvider(payload);
+    const res = await saveProvider(payload);
     setIsSubmitting(false);
 
     if (!res.ok) {

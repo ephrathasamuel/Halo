@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import { createOwnerBooking } from '@/lib/domain/bookings';
 import { checkEquipmentAvailability, checkStudioAvailability, minutesToTime, timeToMinutes } from '@/lib/rules/availability';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Select } from '@/components/ui/Select';
 import { btn } from '@/components/dashboard/DashboardUI';
+import { createOwnerBooking } from '@/lib/client/domain';
 
 const inputClass =
   'w-full px-3.5 min-h-[44px] rounded-xl border border-halo-border-strong bg-halo-surface text-[15px] text-halo-ink focus:border-halo-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-halo-gold';
@@ -59,10 +59,10 @@ export function RecordBookingForm({ listings, provider, onDone, onCancel }) {
     );
   }
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setError('');
-    const res = createOwnerBooking({ ...form, hours: Number(form.hours), qty: Number(form.qty) });
+    const res = await createOwnerBooking({ ...form, hours: Number(form.hours), qty: Number(form.qty) });
     if (!res.ok) {
       setError(res.error);
       return;

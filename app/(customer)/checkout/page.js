@@ -7,10 +7,10 @@ import { AlertCircle, CalendarDays, Clock, Lock, MapPin, ShieldAlert, ShoppingBa
 import { readStorage } from '@/lib/storage/readStorage';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatMoney, formatDate, formatTime } from '@/lib/format';
-import { createBooking } from '@/lib/domain/bookings';
 import { useSession } from '@/hooks/useSession';
 import { EmptyState } from '@/components/states/EmptyState';
 import { BackButton } from '@/components/ui/BackButton';
+import { createBooking } from '@/lib/client/domain';
 
 const buttonClass =
   'inline-flex items-center px-5 bg-halo-ink text-white rounded-xl text-sm font-semibold hover:bg-halo-ink-soft';
@@ -79,13 +79,13 @@ export default function CheckoutPage() {
   // Drafts saved before currencies existed are in Ethiopian Birr
   const currency = draft.currency || 'ETB';
 
-  const handleSendRequest = () => {
+  const handleSendRequest = async () => {
     setErrorMessage('');
     setIsSubmitting(true);
 
     // Payment is not collected online yet: the booking starts as a request
     // (status "requested", payment "pending") and the provider confirms it.
-    const res = createBooking({
+    const res = await createBooking({
       providerId: draft.providerId,
       ownerId: draft.ownerId,
       date: draft.date,

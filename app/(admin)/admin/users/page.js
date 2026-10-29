@@ -5,15 +5,15 @@ import Link from 'next/link';
 import { useScopedStorage } from '@/hooks/useAdminScope';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatDate } from '@/lib/format';
-import { suspendUser, reinstateUser } from '@/lib/domain/users';
+import { reinstateUser, suspendUser } from '@/lib/client/domain';
 
 export default function AdminUsersPage() {
   const { data: users, refresh } = useScopedStorage(STORAGE_KEYS.USERS);
   const [feedback, setFeedback] = useState({ type: '', text: '' });
 
-  const handleSuspend = (userId) => {
+  const handleSuspend = async (userId) => {
     setFeedback({ type: '', text: '' });
-    const res = suspendUser(userId);
+    const res = await suspendUser(userId);
     if (!res.ok) {
       setFeedback({ type: 'error', text: res.error || 'Failed to suspend user' });
       return;
@@ -22,9 +22,9 @@ export default function AdminUsersPage() {
     refresh();
   };
 
-  const handleReinstate = (userId) => {
+  const handleReinstate = async (userId) => {
     setFeedback({ type: '', text: '' });
-    const res = reinstateUser(userId);
+    const res = await reinstateUser(userId);
     if (!res.ok) {
       setFeedback({ type: 'error', text: res.error || 'Failed to reinstate user' });
       return;

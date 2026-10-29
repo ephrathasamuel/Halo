@@ -6,13 +6,13 @@ import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatMoney, formatDate, formatTime } from '@/lib/format';
-import { transitionBooking } from '@/lib/domain/bookings';
 import { EmptyState } from '@/components/states/EmptyState';
 import { STATUS_TONES, statusLabel } from '@/lib/status';
 import { currencyOfProvider, currencyOfCurrentOwner } from '@/lib/domain/providers';
 import { Plus } from 'lucide-react';
 import { Panel, btn } from '@/components/dashboard/DashboardUI';
 import { RecordBookingForm } from '@/components/owner/RecordBookingForm';
+import { transitionBooking } from '@/lib/client/domain';
 
 const STATUS_BADGES = STATUS_TONES;
 
@@ -38,9 +38,9 @@ export default function OwnerBookingsPage() {
   // Sort newest first
   filtered.sort((a, b) => new Date(b.date + 'T' + b.startTime) - new Date(a.date + 'T' + a.startTime));
 
-  const handleTransition = (bookingId, targetState) => {
+  const handleTransition = async (bookingId, targetState) => {
     setFeedback({ type: '', text: '' });
-    const res = transitionBooking(bookingId, targetState);
+    const res = await transitionBooking(bookingId, targetState);
     if (!res.ok) {
       setFeedback({ type: 'error', text: res.error || `Failed to transition booking to ${targetState}` });
       return;

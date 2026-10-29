@@ -32,3 +32,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local server data (accounts with password hashes, bookings...)
+.halo-data/

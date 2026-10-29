@@ -7,10 +7,10 @@ import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatMoney, formatDate, formatHours, formatPrice, formatTime } from '@/lib/format';
-import { transitionBooking } from '@/lib/domain/bookings';
 import { EmptyState } from '@/components/states/EmptyState';
 import { Notice, PageHeader, Panel, StatCard, StatusBadge, btn } from '@/components/dashboard/DashboardUI';
 import { currencyOfProvider } from '@/lib/domain/providers';
+import { transitionBooking } from '@/lib/client/domain';
 
 const EARNING_STATUSES = ['confirmed', 'in_progress', 'completed', 'reviewed'];
 
@@ -39,8 +39,8 @@ export default function OwnerOverviewPage() {
     .filter((b) => EARNING_STATUSES.includes(b.status))
     .reduce((sum, b) => sum + (b.subtotal || 0) - (b.fee || 0), 0);
 
-  const handleAction = (bookingId, targetState) => {
-    const res = transitionBooking(bookingId, targetState);
+  const handleAction = async (bookingId, targetState) => {
+    const res = await transitionBooking(bookingId, targetState);
     if (!res.ok) {
       setNotice({ tone: 'error', text: res.error || 'That change could not be saved.' });
       return;

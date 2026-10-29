@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { CheckCircle2, MessageCircle, Phone } from 'lucide-react';
 import { formatPrice } from '@/lib/format';
 import { providerLocation } from '@/lib/geo';
-import { createPurchaseRequest } from '@/lib/domain/sales';
 import { useSession } from '@/hooks/useSession';
 import { Notice } from '@/components/dashboard/DashboardUI';
+import { createPurchaseRequest } from '@/lib/client/domain';
 
 /**
  * Side panel for an item for sale: price, a purchase request, and direct contact.
@@ -25,13 +25,13 @@ export function PurchasePanel({ listing, provider }) {
 
   const whatsapp = provider.contact?.whatsapp?.replace(/[^0-9]/g, '');
 
-  const send = () => {
+  const send = async () => {
     setError('');
     if (!isSignedIn) {
       router.push(`/signin?next=${encodeURIComponent(`/listings/${listing.id}`)}`);
       return;
     }
-    const res = createPurchaseRequest({ listingId: listing.id, quantity, message });
+    const res = await createPurchaseRequest({ listingId: listing.id, quantity, message });
     if (!res.ok) {
       setError(res.error);
       return;

@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useScopedStorage } from '@/hooks/useAdminScope';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatMoney } from '@/lib/format';
-import { moderateListing } from '@/lib/domain/listings';
 import { STATUS_TONES, statusLabel } from '@/lib/status';
 import { currencyOfProvider } from '@/lib/domain/providers';
+import { moderateListing } from '@/lib/client/domain';
 
 const STATUS_BADGES = STATUS_TONES;
 
@@ -23,9 +23,9 @@ export default function AdminListingsPage() {
     ? listings
     : listings.filter((l) => l.status === filter);
 
-  const handleDecision = (listingId, decision) => {
+  const handleDecision = async (listingId, decision) => {
     setFeedback({ type: '', text: '' });
-    const res = moderateListing(listingId, decision);
+    const res = await moderateListing(listingId, decision);
     if (!res.ok) {
       setFeedback({ type: 'error', text: res.error || 'Failed to moderate listing' });
       return;

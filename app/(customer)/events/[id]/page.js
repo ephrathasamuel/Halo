@@ -6,11 +6,10 @@ import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatDate, formatTime, formatMoney } from '@/lib/format';
-import { respondToQuote, advanceEvent } from '@/lib/domain/events';
-import { openDispute } from '@/lib/domain/disputes';
 import { Check } from 'lucide-react';
 import { currencyOfProvider } from '@/lib/domain/providers';
 import { BackButton } from '@/components/ui/BackButton';
+import { advanceEvent, openDispute, respondToQuote } from '@/lib/client/domain';
 
 const PIPELINE_STEPS = [
   { key: 'submitted', label: 'Submitted' },
@@ -87,11 +86,11 @@ export default function EventDetailPage({ params }) {
   const todayStr = new Date().toISOString().slice(0, 10);
   const isQuoteExpired = activeQuote && activeQuote.validUntil < todayStr;
 
-  const handleQuoteResponse = (decision) => {
+  const handleQuoteResponse = async (decision) => {
     setFeedback({ type: '', text: '' });
     if (!activeQuote) return;
 
-    const res = respondToQuote(activeQuote.id, decision);
+    const res = await respondToQuote(activeQuote.id, decision);
     if (!res.ok) {
       setFeedback({ type: 'error', text: res.error || 'Failed to update quote response' });
       return;
@@ -105,9 +104,9 @@ export default function EventDetailPage({ params }) {
     refreshQuotes();
   };
 
-  const handleConfirmEvent = () => {
+  const handleConfirmEvent = async () => {
     setFeedback({ type: '', text: '' });
-    const res = advanceEvent(eventReq.id, 'confirmed');
+    const res = await advanceEvent(eventReq.id, 'confirmed');
     if (!res.ok) {
       setFeedback({ type: 'error', text: res.error || 'Failed to confirm event' });
       return;
@@ -116,10 +115,10 @@ export default function EventDetailPage({ params }) {
     refreshEvents();
   };
 
-  const handleOpenDispute = (e) => {
+  const handleOpenDispute = async (e) => {
     e.preventDefault();
     setFeedback({ type: '', text: '' });
-    const res = openDispute({
+    const res = await openDispute({
       targetType: 'event',
       targetId: eventReq.id,
       reason: disputeReason,

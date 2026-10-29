@@ -5,10 +5,10 @@ import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatDate, formatMoney } from '@/lib/format';
-import { sendQuote, advanceEvent } from '@/lib/domain/events';
 import { statusLabel } from '@/lib/status';
 import { currencyOfProvider } from '@/lib/domain/providers';
 import { BackButton } from '@/components/ui/BackButton';
+import { advanceEvent, sendQuote } from '@/lib/client/domain';
 
 const QUICK_INCLUSIONS = [
   'Full day coverage',
@@ -83,12 +83,12 @@ export default function OwnerRequestComposerPage({ params }) {
     );
   };
 
-  const handleSendQuote = (e) => {
+  const handleSendQuote = async (e) => {
     e.preventDefault();
     setFeedback({ type: '', text: '' });
     setIsSubmitting(true);
 
-    const res = sendQuote(req.id, {
+    const res = await sendQuote(req.id, {
       amount: Number(quoteAmount),
       inclusions: selectedInclusions,
       validUntil,
@@ -109,9 +109,9 @@ export default function OwnerRequestComposerPage({ params }) {
     refreshQuotes();
   };
 
-  const handleAdvanceStage = (nextStage) => {
+  const handleAdvanceStage = async (nextStage) => {
     setFeedback({ type: '', text: '' });
-    const res = advanceEvent(req.id, nextStage);
+    const res = await advanceEvent(req.id, nextStage);
     if (!res.ok) {
       setFeedback({ type: 'error', text: res.error || `Failed to advance to ${nextStage}` });
       return;

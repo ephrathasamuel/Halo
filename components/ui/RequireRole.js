@@ -17,9 +17,12 @@ export function RequireRole({ role, children }) {
     // Only redirect once the stored session has actually been read
     if (isLoaded && !isSignedIn) {
       const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-      router.push(`/signin?next=${encodeURIComponent(currentPath)}`);
+      // Admin and owner areas use the staff sign-in page.
+      const roles = Array.isArray(role) ? role : [role];
+      const staffArea = roles.some((r) => ['admin', 'regional_admin', 'owner'].includes(r));
+      router.push(`${staffArea ? '/staff/signin' : '/signin'}?next=${encodeURIComponent(currentPath)}`);
     }
-  }, [isLoaded, isSignedIn, router]);
+  }, [isLoaded, isSignedIn, router, role]);
 
   if (!isLoaded) {
     return <div className="min-h-[50vh]" aria-busy="true" />;

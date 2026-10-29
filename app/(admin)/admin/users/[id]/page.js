@@ -4,9 +4,9 @@ import { use, useState } from 'react';
 import { useScopedStorage } from '@/hooks/useAdminScope';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatDate, formatMoney } from '@/lib/format';
-import { suspendUser, reinstateUser } from '@/lib/domain/users';
 import { currencyOfProvider } from '@/lib/domain/providers';
 import { BackButton } from '@/components/ui/BackButton';
+import { reinstateUser, suspendUser } from '@/lib/client/domain';
 
 export default function AdminUserDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -31,9 +31,9 @@ export default function AdminUserDetailPage({ params }) {
     );
   }
 
-  const handleToggleStatus = () => {
+  const handleToggleStatus = async () => {
     setFeedback({ type: '', text: '' });
-    const res = user.status === 'active' ? suspendUser(user.id) : reinstateUser(user.id);
+    const res = user.status === 'active' ? await suspendUser(user.id) : await reinstateUser(user.id);
     if (!res.ok) {
       setFeedback({ type: 'error', text: res.error || 'Failed to update user status' });
       return;

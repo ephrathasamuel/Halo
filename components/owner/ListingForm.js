@@ -6,10 +6,10 @@ import { Building2, Camera, Clapperboard, Plus, Tag, X } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { saveListing } from '@/lib/domain/listings';
 import { providerLocation } from '@/lib/geo';
 import { ImageUploader } from '@/components/ui/ImageUploader';
 import { Notice, btn } from '@/components/dashboard/DashboardUI';
+import { saveListing } from '@/lib/client/domain';
 
 const TYPES = [
   { id: 'studio', label: 'Space', desc: 'A studio or room booked by the hour', icon: Building2 },
@@ -170,13 +170,13 @@ export function ListingForm({ initialListing = null }) {
   const setDetail = (i, key, value) =>
     set('details')(form.details.map((d, j) => (j === i ? { ...d, [key]: value } : d)));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setIsSubmitting(true);
 
     const keepStatus = init.status && !['approved', 'inactive'].includes(init.status) ? init.status : null;
-    const res = saveListing({
+    const res = await saveListing({
       id: init.id,
       providerId: provider.id,
       type,

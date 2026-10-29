@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useSession } from '@/hooks/useSession';
 import { signOut } from '@/lib/domain/auth';
+import { signOutAction } from '@/app/actions/halo';
+import { reloadData } from '@/lib/client/cache';
 import { Logo } from '@/components/ui/Logo';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { CountryPicker } from '@/components/ui/CountryPicker';
@@ -35,8 +37,11 @@ export function Header() {
     setMobileMenuOpen(false);
   }, [pathname]);
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    // Ends the server session (cookie) and clears this tab's checkout draft.
+    await signOutAction();
     signOut();
+    await reloadData();
     router.push('/');
     router.refresh();
   };

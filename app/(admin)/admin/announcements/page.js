@@ -7,11 +7,7 @@ import { formatDate } from '@/lib/format';
 import { ShieldAlert } from 'lucide-react';
 import { useAdminScope } from '@/hooks/useAdminScope';
 import { EmptyState } from '@/components/states/EmptyState';
-import {
-  publishAnnouncement,
-  toggleAnnouncement,
-  deleteAnnouncement,
-} from '@/lib/domain/announcements';
+import { deleteAnnouncement, publishAnnouncement, toggleAnnouncement } from '@/lib/client/domain';
 
 function AnnouncementsManager() {
   const { data: announcements, refresh } = useStorageSync(STORAGE_KEYS.ANNOUNCEMENTS, []);
@@ -21,12 +17,12 @@ function AnnouncementsManager() {
   const [feedback, setFeedback] = useState({ type: '', text: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handlePublish = (e) => {
+  const handlePublish = async (e) => {
     e.preventDefault();
     setFeedback({ type: '', text: '' });
     setIsSubmitting(true);
 
-    const res = publishAnnouncement({ title, message });
+    const res = await publishAnnouncement({ title, message });
     setIsSubmitting(false);
 
     if (!res.ok) {
@@ -40,9 +36,9 @@ function AnnouncementsManager() {
     refresh();
   };
 
-  const handleToggle = (id) => {
+  const handleToggle = async (id) => {
     setFeedback({ type: '', text: '' });
-    const res = toggleAnnouncement(id);
+    const res = await toggleAnnouncement(id);
     if (!res.ok) {
       setFeedback({ type: 'error', text: res.error || 'Failed to update announcement' });
       return;
@@ -50,9 +46,9 @@ function AnnouncementsManager() {
     refresh();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this announcement?')) return;
-    deleteAnnouncement(id);
+    await deleteAnnouncement(id);
     refresh();
   };
 

@@ -16,7 +16,7 @@ npm install
 npm run dev
 # Open http://localhost:3000 in your browser
 
-# 3. Run the automated test suite (104 tests across 9 files)
+# 3. Run the automated test suite (129 tests across 12 files)
 npm test
 
 # 4. Run the code linter (ESLint 9)
@@ -30,7 +30,7 @@ npm run build
 
 ## Pre-Seeded Demo Personas
 
-Halo runs without an external database or backend server. All demo data is seeded automatically into `localStorage` on first load. You can switch between personas with 1-click on the `/signin` page or by using their demo emails:
+On first start the server fills its database with this demo catalogue. Real accounts sign in with a password (customers at `/signin`, admins and studio owners at `/staff/signin`). The personas below have no password: with `HALO_DEMO=on` the sign-in pages show them as one-click demo accounts (for presenting the project); on a real site, leave `HALO_DEMO` empty and they cannot sign in.
 
 | Persona | Role | Seed Email | Access & Permissions |
 |---------|------|------------|-----------------------|
@@ -88,11 +88,11 @@ Halo runs without an external database or backend server. All demo data is seede
 
 ## Architectural Hard Rules & Disclaimers
 
-1. **No Database & No Backend**: State is persisted purely in client `localStorage` (`halo_*_v1`) and `sessionStorage` (`halo_session_v1`, `halo_checkout_draft_v1`).
+1. **Server and database**: All records live on the server: in Supabase (`halo_records`, see `supabase/setup.sql`) when it is configured, otherwise in `.halo-data/` files. Browsers keep only a read copy of what the server sends them and the checkout draft (`sessionStorage`). Every change runs Halo's domain functions on the server (`app/actions/halo.js`), as the user in the signed `halo_session` cookie.
 2. **Safe Storage**: Reads go through `readStorage(key, fallback)` which never throws and auto-recovers from corrupted JSON.
 3. **Guarded Writes**: Every domain write verifies in strict sequence: Session → Role → Ownership → State Machine Transition (`assertTransition`) → Input Validation.
 4. **Server/Client Boundary**: Prerendered layouts, metadata, and sitemaps execute as Server Components; all storage-reactive views are Client Components (see `BOUNDARY.md`).
-5. **Truthful Documentation**: **This is a frontend demo prototype.** Frontend role checks, simulated TeleBirr payments, and client-side guards do not represent production-grade security. A real deployment requires an authenticated backend server, PostgreSQL database, and actual TeleBirr merchant gateway credentials.
+5. **Truthful Documentation**: Accounts use passwords (stored as scrypt hashes) and a signed, httpOnly session cookie; the guarded-write checks run on the server, so they cannot be skipped from the browser. Still to come: role-based filtering of what each user can *read* (today the server sends every collection except passwords), and real payments (checkout is still the simulated TeleBirr flow).
 
 ---
 
@@ -112,7 +112,7 @@ npm test
 - **Quotes, Reviews, Disputes & Admin (`phase5.test.js`)**: Tests quote revision counters, 1-review/1-reply limits, dispute mediation, and user suspension.
 - **Automated Negative Test Matrix (`negative.test.js`)**: 10 strict negative invariant tests covering unauthorized writes, cross-user cancellations, suspended users, expired quotes, and stock conflicts.
 
-**Current Test Status:** `104 passed` across `9 test files` (0 failures).
+**Current Test Status:** `129 passed` across `12 test files` (0 failures).
 
 ---
 

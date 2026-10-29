@@ -6,9 +6,9 @@ import { use, useState, useEffect } from 'react';
 import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { updateListingAvailability } from '@/lib/domain/listings';
 import { formatDate } from '@/lib/format';
 import { BackButton } from '@/components/ui/BackButton';
+import { updateListingAvailability } from '@/lib/client/domain';
 
 export default function StudioAvailabilityPage({ params }) {
   const resolvedParams = use(params);
@@ -88,9 +88,9 @@ export default function StudioAvailabilityPage({ params }) {
     saveAvailability(blockedDates, num);
   };
 
-  const saveAvailability = (dates, buffer) => {
+  const saveAvailability = async (dates, buffer) => {
     setFeedback({ type: '', text: '' });
-    const res = updateListingAvailability(listing.id, {
+    const res = await updateListingAvailability(listing.id, {
       blockedDates: dates,
       bufferMinutes: buffer,
     });

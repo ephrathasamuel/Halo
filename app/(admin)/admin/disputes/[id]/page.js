@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useScopedStorage } from '@/hooks/useAdminScope';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatDate } from '@/lib/format';
-import { resolveDispute } from '@/lib/domain/disputes';
 import { BackButton } from '@/components/ui/BackButton';
+import { resolveDispute } from '@/lib/client/domain';
 
 export default function AdminDisputeDetailPage({ params }) {
   const resolvedParams = use(params);
@@ -35,12 +35,12 @@ export default function AdminDisputeDetailPage({ params }) {
     );
   }
 
-  const handleResolve = (e) => {
+  const handleResolve = async (e) => {
     e.preventDefault();
     setFeedback({ type: '', text: '' });
     setIsSubmitting(true);
 
-    const res = resolveDispute(dispute.id, resolutionNotes);
+    const res = await resolveDispute(dispute.id, resolutionNotes);
     setIsSubmitting(false);
 
     if (!res.ok) {

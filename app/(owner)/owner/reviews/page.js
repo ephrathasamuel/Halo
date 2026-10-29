@@ -5,10 +5,10 @@ import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatDate } from '@/lib/format';
-import { replyToReview } from '@/lib/domain/reviews';
 import { EmptyState } from '@/components/states/EmptyState';
 import { Star } from 'lucide-react';
 import { StarRating } from '@/components/ui/StarRating';
+import { replyToReview } from '@/lib/client/domain';
 
 export default function OwnerReviewsPage() {
   const { session } = useSession();
@@ -29,12 +29,12 @@ export default function OwnerReviewsPage() {
     setFeedback({ type: '', text: '' });
   };
 
-  const handleSendReply = (e) => {
+  const handleSendReply = async (e) => {
     e.preventDefault();
     setFeedback({ type: '', text: '' });
     setIsSubmitting(true);
 
-    const res = replyToReview({
+    const res = await replyToReview({
       reviewId: activeReplyId,
       ownerReply: replyText,
     });

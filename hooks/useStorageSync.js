@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { readStorage } from '@/lib/storage/readStorage';
+import { DATA_EVENT } from '@/lib/client/cache';
 
 /**
  * Hook to read data from storage and re-read when storage changes.
@@ -33,7 +34,12 @@ export function useStorageSync(key, fallback, storageType = 'local') {
       }
     };
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    // The server copy (lib/client/cache.js) was reloaded
+    window.addEventListener(DATA_EVENT, refresh);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener(DATA_EVENT, refresh);
+    };
   }, [key, refresh]);
 
   return { ...state, refresh };

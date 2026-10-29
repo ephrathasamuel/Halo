@@ -7,9 +7,9 @@ import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatMoney, relativeTime } from '@/lib/format';
-import { updatePurchaseRequest } from '@/lib/domain/sales';
 import { EmptyState } from '@/components/states/EmptyState';
 import { Notice, PageHeader, StatusBadge, btn } from '@/components/dashboard/DashboardUI';
+import { updatePurchaseRequest } from '@/lib/client/domain';
 
 const NEXT_STEP = {
   requested: 'Waiting for the seller to reply.',
@@ -41,8 +41,8 @@ export default function PurchasesPage() {
     .filter((p) => p.buyerId === session.userId)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-  const cancel = (p) => {
-    const res = updatePurchaseRequest(p.id, 'cancelled');
+  const cancel = async (p) => {
+    const res = await updatePurchaseRequest(p.id, 'cancelled');
     setNotice(res.ok ? { tone: 'success', text: 'Request cancelled.' } : { tone: 'error', text: res.error });
     refresh();
   };

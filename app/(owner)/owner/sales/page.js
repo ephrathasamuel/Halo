@@ -7,9 +7,9 @@ import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatMoney, relativeTime } from '@/lib/format';
-import { updatePurchaseRequest } from '@/lib/domain/sales';
 import { EmptyState } from '@/components/states/EmptyState';
 import { Notice, PageHeader, StatusBadge, btn } from '@/components/dashboard/DashboardUI';
+import { updatePurchaseRequest } from '@/lib/client/domain';
 
 const OPEN = ['requested', 'accepted'];
 
@@ -26,8 +26,8 @@ export default function OwnerSalesPage() {
   const closed = mine.filter((p) => !OPEN.includes(p.status));
   const forSale = listings.filter((l) => l.ownerId === session?.userId && l.type === 'sale');
 
-  const act = (request, target, text) => {
-    const res = updatePurchaseRequest(request.id, target);
+  const act = async (request, target, text) => {
+    const res = await updatePurchaseRequest(request.id, target);
     setNotice(res.ok ? { tone: 'success', text } : { tone: 'error', text: res.error });
     refresh();
   };

@@ -5,7 +5,9 @@ import { ShieldAlert, UserPlus } from 'lucide-react';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { COUNTRIES, countryName, providerLocation } from '@/lib/geo';
 import { PhoneInput } from '@/components/ui/PhoneInput';
-import { createRegionalAdmin, moveRegionalAdmin, removeRegionalAdmin } from '@/lib/domain/users';
+import { moveRegionalAdmin, removeRegionalAdmin } from '@/lib/client/domain';
+import { createRegionalAdminWithPassword } from '@/app/actions/halo';
+import { reloadData } from '@/lib/client/cache';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { useAdminScope } from '@/hooks/useAdminScope';
 import { EmptyState } from '@/components/states/EmptyState';
@@ -126,10 +128,12 @@ export default function RegionalAdminsPage() {
     return true;
   };
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
-    if (done(createRegionalAdmin(form), `${form.name.trim()} now looks after ${countryName(form.country)}.`)) {
-      setForm({ name: '', email: '', phone: '', country: form.country });
+    const res = await createRegionalAdminWithPassword(form);
+    await reloadData();
+    if (done(res, `${form.name.trim()} now looks after ${countryName(form.country)}. Give them their first password; they can change it in their account.`)) {
+      setForm({ name: '', email: '', phone: '', password: '', country: form.country });
     }
   };
 
@@ -154,7 +158,7 @@ export default function RegionalAdminsPage() {
       )}
 
       <Panel title="Add a regional admin">
-        <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 items-end">
+        <form onSubmit={handleCreate} className="grid gap-4 md:grid-cols-2 lg:grid-cols-6 items-end">
           <div className="lg:col-span-1">
             <label htmlFor="ra-name" className="block text-xs font-medium text-halo-text-muted mb-1">Full name</label>
             <input id="ra-name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
@@ -166,6 +170,10 @@ export default function RegionalAdminsPage() {
           <div className="lg:col-span-1">
             <label htmlFor="ra-phone" className="block text-xs font-medium text-halo-text-muted mb-1">Phone (optional)</label>
             <PhoneInput id="ra-phone" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} defaultCountry={form.country} inputClassName={inputClass} />
+          </div>
+          <div className="lg:col-span-1">
+            <label htmlFor="ra-password" className="block text-xs font-medium text-halo-text-muted mb-1">First password</label>
+            <input id="ra-password" type="password" autoComplete="new-password" required minLength={8} value={form.password || ''} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputClass} />
           </div>
           <Select
             label="Country"
@@ -190,8 +198,8 @@ export default function RegionalAdminsPage() {
               key={admin.id}
               admin={admin}
               stats={statsFor(admin.adminScope?.country)}
-              onMove={(a, c) => done(moveRegionalAdmin(a.id, c), `${a.name} now looks after ${countryName(c)}.`)}
-              onRemove={(a) => done(removeRegionalAdmin(a.id), `${a.name} is no longer a regional admin.`)}
+              onMove={async (a, c) => done(await moveRegionalAdmin(a.id, c), `${a.name} now looks after ${countryName(c)}.`)}
+              onRemove={async (a) => done(await removeRegionalAdmin(a.id), `${a.name} is no longer a regional admin.`)}
             />
           ))}
         </ul>

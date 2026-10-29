@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getCurrentSession } from '@/lib/domain/auth';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
+import { DATA_EVENT, isLoaded as serverDataLoaded } from '@/lib/client/cache';
 
 export const SESSION_CHANGE_EVENT = 'halo-session-change';
 
@@ -19,7 +20,8 @@ export function useSession() {
   const refresh = useCallback(() => {
     const current = getCurrentSession();
     setSession(current);
-    setIsLoaded(true);
+    // Signed-in or not is only known once the server has answered.
+    setIsLoaded(serverDataLoaded());
   }, []);
 
   useEffect(() => {
@@ -34,7 +36,9 @@ export function useSession() {
     window.addEventListener('storage', handleStorage);
     // Same-tab changes (profile edits) announce themselves with this event
     window.addEventListener(SESSION_CHANGE_EVENT, refresh);
+    window.addEventListener(DATA_EVENT, refresh);
     return () => {
+      window.removeEventListener(DATA_EVENT, refresh);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener(SESSION_CHANGE_EVENT, refresh);
     };

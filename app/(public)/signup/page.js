@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { signUp, signUpProvider } from '@/lib/domain/auth';
+import { signUpWithPassword, signUpProviderWithPassword } from '@/app/actions/halo';
+import { reloadData } from '@/lib/client/cache';
 import { safeReturnPath } from '@/lib/safeReturnPath';
 import { COUNTRIES, cityCoords, cityNames, regionNames } from '@/lib/geo';
 import { useCountry } from '@/hooks/useCountry';
@@ -45,6 +46,7 @@ function SignUpContent() {
   const [form, setForm] = useState({
     name: '',
     email: '',
+    password: '',
     phone: '',
     country: '',
     businessName: '',
@@ -75,17 +77,19 @@ function SignUpContent() {
     setForm((f) => ({ ...f, city, neighbourhood: '', latitude: c?.lat ?? null, longitude: c?.lng ?? null }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setIsSubmitting(true);
-    const res = isProvider ? signUpProvider(form) : signUp(form);
+    // Created on the server: Halo's sign-up rules, then the password (stored only as a hash).
+    const res = await (isProvider ? signUpProviderWithPassword(form) : signUpWithPassword(form));
     setIsSubmitting(false);
 
-    if (!res.ok) {
-      setErrorMessage(res.error || 'Failed to create account');
+    if (!res?.ok) {
+      setErrorMessage(res?.error || 'Failed to create account');
       return;
     }
+    await reloadData();
     router.push(isProvider ? '/owner' : returnPath);
     router.refresh();
   };
@@ -145,6 +149,17 @@ function SignUpContent() {
             onChange={set(f.key)}
           />
         ))}
+
+        <TextField
+          id="signup-password"
+          label="Password"
+          type="password"
+          autoComplete="new-password"
+          placeholder="At least 8 characters, with a number"
+          minLength={8}
+          value={form.password}
+          onChange={set('password')}
+        />
 
         <Select
           label="Country"

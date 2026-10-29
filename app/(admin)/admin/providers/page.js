@@ -4,8 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useScopedStorage } from '@/hooks/useAdminScope';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
-import { moderateProvider } from '@/lib/domain/providers';
 import { STATUS_TONES, statusLabel } from '@/lib/status';
+import { moderateProvider } from '@/lib/client/domain';
 
 const STATUS_BADGES = STATUS_TONES;
 
@@ -16,9 +16,9 @@ export default function AdminProvidersPage() {
 
   const [feedback, setFeedback] = useState({ type: '', text: '' });
 
-  const handleDecision = (providerId, decision) => {
+  const handleDecision = async (providerId, decision) => {
     setFeedback({ type: '', text: '' });
-    const res = moderateProvider(providerId, decision);
+    const res = await moderateProvider(providerId, decision);
     if (!res.ok) {
       setFeedback({ type: 'error', text: res.error || 'Failed to update provider status' });
       return;

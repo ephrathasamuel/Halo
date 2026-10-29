@@ -7,11 +7,11 @@ import { useSession } from '@/hooks/useSession';
 import { useStorageSync } from '@/hooks/useStorageSync';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { formatPrice, LISTING_TYPE_LABELS } from '@/lib/format';
-import { deactivateListing } from '@/lib/domain/listings';
 import { currencyOfProvider } from '@/lib/domain/providers';
 import { EmptyState } from '@/components/states/EmptyState';
 import { SafeImage } from '@/components/ui/SafeImage';
 import { Notice, PageHeader, StatusBadge, btn } from '@/components/dashboard/DashboardUI';
+import { deactivateListing } from '@/lib/client/domain';
 
 const TABS = [
   { id: 'all', label: 'All' },
@@ -39,8 +39,8 @@ export default function OwnerListingsPage() {
 
   const filtered = typeFilter === 'all' ? myListings : myListings.filter((l) => l.type === typeFilter);
 
-  const toggleAvailable = (item) => {
-    const res = deactivateListing(item.id);
+  const toggleAvailable = async (item) => {
+    const res = await deactivateListing(item.id);
     if (!res.ok) {
       setNotice({ tone: 'error', text: res.error || 'That change could not be saved' });
       return;
