@@ -7,8 +7,8 @@ const VISIBLE_MS = 90 * 1000;
 const FADE_MS = 700;
 
 /**
- * Frosted, see-through announcement that floats over the hero photo.
- * Fades out by itself after 90 seconds (or when closed) and stays hidden for the
+ * Announcement bar across the full width, right under the header. The whole
+ * message is shown (on a phone it wraps onto more lines). Fades out by itself after 90 seconds (or when closed) and stays hidden for the
  * rest of the browser session.
  * @param {{ announcement: { id?: string, title: string, message: string } }} props
  */
@@ -49,23 +49,23 @@ export function AnnouncementToast({ announcement }) {
   return (
     <div
       role="status"
-      className={`pointer-events-auto w-full lg:max-w-md rounded-2xl border border-on-photo/20 bg-on-photo/10 px-4 py-3 text-on-photo backdrop-blur-md transition-all duration-700 ${
-        state === 'leaving' ? 'opacity-0 -translate-y-2' : 'opacity-100 translate-y-0'
+      className={`w-full border-b border-halo-border bg-halo-ink text-white transition-opacity duration-700 ${
+        state === 'leaving' ? 'opacity-0' : 'opacity-100'
       }`}
     >
-      <div className="flex items-start gap-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-start gap-3">
         <Megaphone className="mt-0.5 h-4 w-4 shrink-0 text-halo-gold" aria-hidden="true" />
-        <p className="flex-1 text-sm leading-relaxed line-clamp-2 lg:line-clamp-none">
+        <p className="flex-1 min-w-0 text-sm leading-relaxed break-words">
           <span className="font-semibold">
             {title}
             {endsWithPunctuation ? '' : '.'}
           </span>{' '}
-          <span className="text-on-photo/80">{announcement.message}</span>
+          <span className="text-white/80">{announcement.message}</span>
         </p>
         <button
           type="button"
           onClick={() => setState('leaving')}
-          className="-my-2 -mr-2 flex items-center justify-center rounded-lg text-on-photo/70 hover:bg-on-photo/10 hover:text-on-photo min-h-[36px] min-w-[36px]"
+          className="-my-2 -mr-2 flex items-center justify-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white min-h-[36px] min-w-[36px]"
           aria-label="Close announcement"
         >
           <X className="h-4 w-4" aria-hidden="true" />

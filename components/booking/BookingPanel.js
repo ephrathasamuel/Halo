@@ -16,6 +16,8 @@ import { writeStorage } from '@/lib/storage/writeStorage';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { useSession } from '@/hooks/useSession';
 import { useListings } from '@/hooks/useListings';
+import { useStorageSync } from '@/hooks/useStorageSync';
+import { bookingsPausedReason } from '@/lib/domain/settings';
 
 /**
  * Interactive booking panel for studio and equipment listings.
@@ -28,6 +30,8 @@ export function BookingPanel({ listing, provider }) {
   const router = useRouter();
   const { session, isSignedIn } = useSession();
   const { listings: allListings } = useListings({ publicOnly: true });
+  useStorageSync(STORAGE_KEYS.SETTINGS, []); // re-render when an admin pauses bookings
+  const paused = bookingsPausedReason();
 
   const isStudio = listing.type === 'studio';
   const { currency } = providerLocation(provider);
@@ -347,6 +351,12 @@ export function BookingPanel({ listing, provider }) {
         </p>
       )}
 
+      {paused && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800" role="status">
+          {paused}
+        </p>
+      )}
+
       {formError && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-halo-error" role="alert">
           {formError}
@@ -356,7 +366,7 @@ export function BookingPanel({ listing, provider }) {
       <button
         type="button"
         onClick={handleProceedToCheckout}
-        disabled={!availability.available}
+        disabled={!availability.available || Boolean(paused)}
         className="w-full rounded-xl bg-halo-ink py-3.5 text-[15px] font-semibold text-white hover:bg-halo-ink-soft disabled:bg-halo-border-strong disabled:text-halo-text-muted disabled:cursor-not-allowed min-h-[48px]"
       >
         {isSignedIn ? 'Continue to booking' : 'Sign in to book'}

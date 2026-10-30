@@ -55,6 +55,12 @@ export default function AccountPage() {
     <div className="max-w-2xl space-y-6">
       <PageHeader title="Profile" description="How providers and Halo see you." />
 
+      {session?.mustChangePassword && (
+        <Notice tone="error">
+          Your password was set by a Halo admin. Choose your own password below to continue.
+        </Notice>
+      )}
+
       {notice && (
         <Notice tone={notice.tone} onDismiss={() => setNotice(null)}>
           {notice.text}

@@ -99,7 +99,7 @@ export function AdminSetPasswordPanel({ user }) {
     const result = await adminSetPassword({ userId: user.id, newPassword: password });
     setPending(false);
     if (result?.ok) {
-      setNotice({ tone: 'success', text: `New password set for ${user.name}. Tell them in person or by phone; they can change it in their account.` });
+      setNotice({ tone: 'success', text: `New password set for ${user.name}. Tell them in person or by phone; they will choose their own when they sign in.` });
       setPassword('');
     } else {
       setNotice({ tone: 'error', text: result?.error || 'Could not set the password' });
@@ -122,7 +122,7 @@ export function AdminSetPasswordPanel({ user }) {
           {pending ? 'Saving…' : 'Set password'}
         </button>
       </form>
-      <p className="text-xs text-halo-text-muted">They will be signed out everywhere and use this password next time.</p>
+      <p className="text-xs text-halo-text-muted">They will be signed out everywhere, sign in with this password once, then choose their own.</p>
     </div>
   );
 }

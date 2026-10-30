@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { installClientCache, reloadData } from '@/lib/client/cache';
+import { usePathname, useRouter } from 'next/navigation';
+import { DATA_EVENT, currentSession, installClientCache, reloadData } from '@/lib/client/cache';
 
 /**
  * Loads Halo's data from the server when the app starts, and keeps it fresh:
@@ -9,6 +10,19 @@ import { installClientCache, reloadData } from '@/lib/client/cache';
  * open (so a booking someone else made shows up).
  */
 export function AppInitializer() {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Someone signed in with a password an admin gave them picks their own first.
+  useEffect(() => {
+    const check = () => {
+      if (currentSession()?.mustChangePassword && pathname !== '/account') router.replace('/account');
+    };
+    check();
+    window.addEventListener(DATA_EVENT, check);
+    return () => window.removeEventListener(DATA_EVENT, check);
+  }, [pathname, router]);
+
   useEffect(() => {
     installClientCache();
     reloadData();

@@ -97,6 +97,9 @@ export default function HomePage() {
 
   return (
     <div className="pb-20">
+      {/* Full-width bar right under the header */}
+      {activeAnnouncement && <AnnouncementToast announcement={activeAnnouncement} />}
+
       {/* Hero */}
       {/* No overflow-hidden: the category dropdown menu must be able to hang below the hero */}
       <section className="relative z-20 isolate bg-black">
@@ -110,15 +113,6 @@ export default function HomePage() {
           sizes="100vw"
         />
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/75 via-black/45 to-black/10" />
-
-        {/* Floats over the photo; takes no space in the layout */}
-        {activeAnnouncement && (
-          <div className="absolute inset-x-0 top-4 sm:top-6 z-10 pointer-events-none">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex lg:justify-end">
-              <AnnouncementToast announcement={activeAnnouncement} />
-            </div>
-          </div>
-        )}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 sm:pt-32 sm:pb-24 lg:pt-28">
           <div className="max-w-2xl">

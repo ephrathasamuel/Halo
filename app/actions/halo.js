@@ -23,6 +23,7 @@ import * as listings from '@/lib/domain/listings';
 import * as providers from '@/lib/domain/providers';
 import * as reviews from '@/lib/domain/reviews';
 import * as sales from '@/lib/domain/sales';
+import * as settings from '@/lib/domain/settings';
 import * as users from '@/lib/domain/users';
 import { signUp, signUpProvider } from '@/lib/domain/auth';
 
@@ -68,6 +69,7 @@ const CALLABLE = {
   'users.moveRegionalAdmin': users.moveRegionalAdmin,
   'users.removeRegionalAdmin': users.removeRegionalAdmin,
   'users.updateProfile': users.updateProfile,
+  'settings.setBookingsPaused': settings.setBookingsPaused,
 };
 
 async function withRequest(fn) {
@@ -95,7 +97,12 @@ export async function callDomain(name, args = []) {
   const fn = CALLABLE[name];
   if (!fn) return { ok: false, error: 'Unknown action' };
   if (!Array.isArray(args) || args.length > 4) return { ok: false, error: 'Invalid request' };
-  return withRequest(async () => clean(await fn(...args)));
+  return withRequest(async (session) => {
+    if (session?.mustChangePassword) {
+      return { ok: false, error: 'Choose your own password first (Profile, Password).' };
+    }
+    return clean(await fn(...args));
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -162,6 +169,7 @@ export async function changePassword({ currentPassword, newPassword } = {}) {
     const updated = updateUser(user.id, {
       passwordHash: hashPassword(newPassword),
       sessionVersion: (user.sessionVersion || 1) + 1,
+      mustChangePassword: false,
     });
     await setSessionCookie(updated);
     return { ok: true };
@@ -177,7 +185,8 @@ export async function createRegionalAdminWithPassword(input) {
     const result = users.createRegionalAdmin(profile);
     if (!result.ok) return clean(result);
     const created = findUserByEmail(profile.email);
-    if (created) updateUser(created.id, { passwordHash: hashPassword(password), sessionVersion: 1 });
+    // A password someone else chose: they pick their own when they first sign in.
+    if (created) updateUser(created.id, { passwordHash: hashPassword(password), sessionVersion: 1, mustChangePassword: true });
     return clean(result);
   });
 }
@@ -206,7 +215,11 @@ export async function adminSetPassword({ userId, newPassword } = {}) {
     }
     const problem = passwordProblem(newPassword);
     if (problem) return { ok: false, error: problem };
-    updateUser(target.id, { passwordHash: hashPassword(newPassword), sessionVersion: (target.sessionVersion || 1) + 1 });
+    updateUser(target.id, {
+      passwordHash: hashPassword(newPassword),
+      sessionVersion: (target.sessionVersion || 1) + 1,
+      mustChangePassword: true,
+    });
     return { ok: true };
   });
 }

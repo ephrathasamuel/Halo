@@ -40,7 +40,11 @@ export function SignInForm({ portal, returnPath, nextParam, errorCode }) {
       return;
     }
     await reloadData();
-    const target = portal === 'staff' && (!returnPath || returnPath === '/') ? homeFor(result.session?.roles) : returnPath;
+    const target = result.session?.mustChangePassword
+      ? '/account'
+      : portal === 'staff' && (!returnPath || returnPath === '/')
+        ? homeFor(result.session?.roles)
+        : returnPath;
     router.push(target || '/');
     router.refresh();
   }

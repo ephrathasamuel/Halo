@@ -7,6 +7,7 @@ import { formatPrice } from '@/lib/format';
 import { COUNTRIES, providerLocation } from '@/lib/geo';
 import { useAdminScope, useScopedStorage } from '@/hooks/useAdminScope';
 import { PageHeader, Panel, StatCard } from '@/components/dashboard/DashboardUI';
+import { BookingsSwitch } from '@/components/admin/BookingsSwitch';
 
 const REVENUE_STATUSES = ['confirmed', 'in_progress', 'completed', 'reviewed'];
 
@@ -120,6 +121,8 @@ export default function AdminDashboardPage() {
             : `Approvals, customers and disputes in ${label}.`
         }
       />
+
+      {isGlobal && <BookingsSwitch />}
 
       <Panel
         title="Needs your attention"
