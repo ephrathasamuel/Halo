@@ -9,12 +9,13 @@ import { OAUTH_COOKIE, googleAccountFromCode } from '@/lib/server/google';
 
 export const dynamic = 'force-dynamic';
 
-const STAFF_ROLES = ['admin', 'regional_admin', 'owner'];
+const ADMIN_ROLES = ['admin', 'regional_admin'];
 
 /**
  * Google sends people back here (through Supabase). The verified Google email
  * signs into the Halo account with that email; a new customer account is made
- * for an email Halo hasn't seen. Staff accounts are never created this way.
+ * for an email Halo hasn't seen. Admin accounts are never created this way,
+ * and admins don't use Google (their page has no Google button).
  */
 export async function GET(request) {
   const url = new URL(request.url);
@@ -62,11 +63,12 @@ export async function GET(request) {
 
   if (user.status === 'suspended') return fail('suspended');
   const roles = user.roles || [];
-  if (portal === 'staff' && !roles.some((r) => STAFF_ROLES.includes(r))) return fail('customer-account');
-  if (portal === 'customer' && !roles.includes('renter')) return fail('staff-account');
+  const isAdmin = roles.some((r) => ADMIN_ROLES.includes(r));
+  if (portal === 'staff' && !isAdmin) return fail('customer-account');
+  if (portal === 'customer' && isAdmin) return fail('staff-account');
 
   await flushStore();
   await setSessionCookie(user);
-  const target = saved.next || (portal === 'staff' ? homeFor(roles) : '/');
+  const target = user.mustChangePassword ? '/account' : saved.next || homeFor(roles);
   return finish(target);
 }

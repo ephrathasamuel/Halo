@@ -14,14 +14,15 @@ const GOOGLE_ERRORS = {
   unverified: 'Google did not confirm this email address.',
   'no-staff-account': 'There is no staff account for this Google email. Studio owners register first; admins are added by the Halo admin.',
   suspended: 'This account is suspended.',
-  'staff-account': 'This is a staff account. Sign in on the staff page.',
-  'customer-account': 'This is a customer account. Sign in on the customer page.',
+  'staff-account': 'This is an admin account. Sign in on the admin page.',
+  'customer-account': 'This is not an admin account. Customers and providers sign in on the main page.',
 };
 
 
 /**
- * Email + password sign-in, shared by the customer page (/signin) and the
- * staff page (/staff/signin: admins, regional admins and studio owners).
+ * Email + password sign-in, shared by the main page (/signin: customers and
+ * providers) and the admin page (/staff/signin: admins and regional admins,
+ * whose accounts Halo creates; no Google there, as in Addis Eats).
  */
 export function SignInForm({ portal, returnPath, nextParam, errorCode }) {
   const router = useRouter();
@@ -40,11 +41,12 @@ export function SignInForm({ portal, returnPath, nextParam, errorCode }) {
       return;
     }
     await reloadData();
+    // With no page to go back to: admins to /admin, providers to /owner, customers home.
     const target = result.session?.mustChangePassword
       ? '/account'
-      : portal === 'staff' && (!returnPath || returnPath === '/')
-        ? homeFor(result.session?.roles)
-        : returnPath;
+      : nextParam
+        ? returnPath
+        : homeFor(result.session?.roles);
     router.push(target || '/');
     router.refresh();
   }
@@ -62,19 +64,19 @@ export function SignInForm({ portal, returnPath, nextParam, errorCode }) {
 
   return (
     <AuthCard
-      title={portal === 'staff' ? 'Staff sign in' : 'Sign in'}
+      title={portal === 'staff' ? 'Admin sign in' : 'Sign in'}
       subtitle={
         portal === 'staff'
-          ? 'For Halo admins and studio owners.'
-          : 'Welcome back. Sign in to book, track requests and leave reviews.'
+          ? 'For Halo admins only. Admin accounts are created by Halo.'
+          : 'For customers and providers. Book, manage your storefront, track requests.'
       }
       error={error}
       footer={
         portal === 'staff' ? (
           <>
-            Booking a studio?{' '}
+            Customer or provider?{' '}
             <Link href="/signin" className={linkClass}>
-              Customer sign in
+              Sign in here
             </Link>
           </>
         ) : (
@@ -90,7 +92,7 @@ export function SignInForm({ portal, returnPath, nextParam, errorCode }) {
       {wrongPortal && (
         <p className="-mt-4 mb-6 text-sm">
           <Link href={otherPortal} className={linkClass}>
-            {wrongPortal === 'staff' ? 'Go to the staff sign in' : 'Go to the customer sign in'}
+            {wrongPortal === 'staff' ? 'Go to the admin sign in' : 'Go to the main sign in'}
           </Link>
         </p>
       )}
@@ -132,23 +134,27 @@ export function SignInForm({ portal, returnPath, nextParam, errorCode }) {
         </button>
       </form>
 
-      <div className="my-6 flex items-center gap-3 text-xs text-halo-text-muted" aria-hidden="true">
-        <span className="h-px flex-1 bg-halo-border" />
-        or
-        <span className="h-px flex-1 bg-halo-border" />
-      </div>
-      <a
-        href={`/auth/google?${new URLSearchParams({ portal, ...(nextParam ? { next: nextParam } : {}) })}`}
-        className="flex w-full items-center justify-center gap-3 rounded-xl border border-halo-border-strong bg-white py-3 text-[15px] font-semibold text-halo-ink hover:border-halo-ink min-h-[48px]"
-      >
-        <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09z" />
-          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.76c-.98.66-2.24 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
-          <path fill="#FBBC05" d="M5.84 14.11a6.6 6.6 0 0 1 0-4.22V7.05H2.18a11 11 0 0 0 0 9.9l3.66-2.84z" />
-          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.96 10.96 0 0 0 12 1 11 11 0 0 0 2.18 7.05l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
-        </svg>
-        Continue with Google
-      </a>
+      {portal !== 'staff' && (
+        <>
+          <div className="my-6 flex items-center gap-3 text-xs text-halo-text-muted" aria-hidden="true">
+            <span className="h-px flex-1 bg-halo-border" />
+            or
+            <span className="h-px flex-1 bg-halo-border" />
+          </div>
+          <a
+            href={`/auth/google?${new URLSearchParams({ portal, ...(nextParam ? { next: nextParam } : {}) })}`}
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-halo-border-strong bg-white py-3 text-[15px] font-semibold text-halo-ink hover:border-halo-ink min-h-[48px]"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.76c-.98.66-2.24 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
+              <path fill="#FBBC05" d="M5.84 14.11a6.6 6.6 0 0 1 0-4.22V7.05H2.18a11 11 0 0 0 0 9.9l3.66-2.84z" />
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.96 10.96 0 0 0 12 1 11 11 0 0 0 2.18 7.05l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
+            </svg>
+            Continue with Google
+          </a>
+        </>
+      )}
 
     </AuthCard>
   );

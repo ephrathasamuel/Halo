@@ -31,7 +31,7 @@ export function BookingPanel({ listing, provider }) {
   const { session, isSignedIn } = useSession();
   const { listings: allListings } = useListings({ publicOnly: true });
   useStorageSync(STORAGE_KEYS.SETTINGS, []); // re-render when an admin pauses bookings
-  const paused = bookingsPausedReason();
+  const paused = provider?.ownerId ? bookingsPausedReason() : "This storefront isn't taking bookings yet.";
 
   const isStudio = listing.type === 'studio';
   const { currency } = providerLocation(provider);

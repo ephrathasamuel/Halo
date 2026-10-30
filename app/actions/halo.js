@@ -1,6 +1,6 @@
 'use server';
 
-import { flushStore, runAs, syncStore } from '@/lib/server/store';
+import { flushStore, readCollection, runAs, syncStore, writeCollection } from '@/lib/server/store';
 import {
   authenticate,
   clearSessionCookie,
@@ -26,6 +26,9 @@ import * as sales from '@/lib/domain/sales';
 import * as settings from '@/lib/domain/settings';
 import * as users from '@/lib/domain/users';
 import { signUp, signUpProvider } from '@/lib/domain/auth';
+import { canAdminProvider, countryOfProvider } from '@/lib/domain/adminScope';
+import { STORAGE_KEYS } from '@/lib/storage/keys';
+import crypto from 'node:crypto';
 
 /*
  * Every change in Halo goes through here. Each call:
@@ -109,20 +112,19 @@ export async function callDomain(name, args = []) {
 // Accounts
 // ---------------------------------------------------------------------------
 
-/** Email + password sign-in. `portal` is "customer" or "staff" (admins and owners). */
+/** Email + password sign-in. `portal` is "customer" (customers and providers) or "staff" (admins only). */
 export async function signInWithPassword({ email, password, portal = 'customer' } = {}) {
   return withRequest(async () => {
     if (!email || !password) return { ok: false, error: 'Enter your email and password' };
     const result = authenticate(email, password);
     if (!result.ok) return result;
     const roles = result.user.roles || [];
-    const isStaff = roles.some((r) => ['admin', 'regional_admin', 'owner'].includes(r));
-    const isCustomer = roles.includes('renter');
-    if (portal === 'staff' && !isStaff) {
-      return { ok: false, error: 'This is a customer account. Sign in on the customer page.', wrongPortal: 'customer' };
+    const isAdmin = roles.some((r) => r === 'admin' || r === 'regional_admin');
+    if (portal === 'staff' && !isAdmin) {
+      return { ok: false, error: 'This is not an admin account. Customers and providers sign in on the main page.', wrongPortal: 'customer' };
     }
-    if (portal === 'customer' && !isCustomer) {
-      return { ok: false, error: 'This is a staff account. Sign in on the staff page.', wrongPortal: 'staff' };
+    if (portal !== 'staff' && isAdmin) {
+      return { ok: false, error: 'This is an admin account. Sign in on the admin page.', wrongPortal: 'staff' };
     }
     await setSessionCookie(result.user);
     return { ok: true, session: sessionFor(result.user) };
@@ -188,6 +190,65 @@ export async function createRegionalAdminWithPassword(input) {
     // A password someone else chose: they pick their own when they first sign in.
     if (created) updateUser(created.id, { passwordHash: hashPassword(password), sessionVersion: 1, mustChangePassword: true });
     return clean(result);
+  });
+}
+
+/**
+ * An admin gives a storefront with no owner to its real owner: their own
+ * account (name, email, first password they change when they first sign in),
+ * separate from any admin account. An existing customer account with that
+ * email becomes the owner instead of a new one being made.
+ */
+export async function assignStorefrontOwner({ providerId, name, email, phone, password } = {}) {
+  return withRequest(async (session) => {
+    const roles = session?.roles || [];
+    if (!roles.includes('admin') && !roles.includes('regional_admin')) return { ok: false, error: 'Only admins can do this' };
+    const provider = readCollection(STORAGE_KEYS.PROVIDERS).find((p) => p.id === providerId);
+    if (!provider) return { ok: false, error: 'Storefront not found' };
+    if (!canAdminProvider(session, provider.id)) return { ok: false, error: 'This storefront is not in your country' };
+    if (provider.ownerId && findUserById(provider.ownerId)) return { ok: false, error: 'This storefront already has an owner' };
+
+    const cleanEmail = String(email || '').trim().toLowerCase();
+    const cleanName = String(name || '').trim();
+    if (!cleanName) return { ok: false, error: "Enter the owner's name" };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return { ok: false, error: "Enter the owner's email" };
+
+    let owner = findUserByEmail(cleanEmail);
+    const existing = Boolean(owner);
+    if (owner) {
+      if (owner.roles?.some((r) => r === 'admin' || r === 'regional_admin')) {
+        return { ok: false, error: 'That email belongs to an admin. Providers need their own account.' };
+      }
+      if (owner.status === 'suspended') return { ok: false, error: 'That account is suspended' };
+      owner = updateUser(owner.id, { roles: [...new Set([...(owner.roles || []), 'owner'])] });
+    } else {
+      const problem = passwordProblem(password);
+      if (problem) return { ok: false, error: problem };
+      owner = {
+        id: crypto.randomUUID(),
+        name: cleanName,
+        email: cleanEmail,
+        phone: String(phone || '').trim(),
+        country: countryOfProvider(provider.id),
+        roles: ['renter', 'owner'],
+        status: 'active',
+        passwordHash: hashPassword(password),
+        mustChangePassword: true,
+        sessionVersion: 1,
+        createdAt: new Date().toISOString(),
+      };
+      writeCollection(STORAGE_KEYS.USERS, [...readCollection(STORAGE_KEYS.USERS), owner]);
+    }
+
+    writeCollection(
+      STORAGE_KEYS.PROVIDERS,
+      readCollection(STORAGE_KEYS.PROVIDERS).map((p) => (p.id === provider.id ? { ...p, ownerId: owner.id } : p))
+    );
+    writeCollection(
+      STORAGE_KEYS.LISTINGS,
+      readCollection(STORAGE_KEYS.LISTINGS).map((l) => (l.providerId === provider.id ? { ...l, ownerId: owner.id } : l))
+    );
+    return { ok: true, existingAccount: existing };
   });
 }
 

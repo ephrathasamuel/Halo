@@ -6,6 +6,7 @@ import { useScopedStorage } from '@/hooks/useAdminScope';
 import { STORAGE_KEYS } from '@/lib/storage/keys';
 import { STATUS_TONES, statusLabel } from '@/lib/status';
 import { moderateProvider } from '@/lib/client/domain';
+import { AssignOwnerForm } from '@/components/admin/AssignOwnerForm';
 
 const STATUS_BADGES = STATUS_TONES;
 
@@ -33,9 +34,9 @@ export default function AdminProvidersPage() {
   return (
     <div className="space-y-6">
       <div className="pb-4 border-b border-halo-border">
-        <h1 className="text-2xl font-semibold text-halo-ink">Provider Moderation</h1>
+        <h1 className="text-2xl font-semibold text-halo-ink">Storefronts</h1>
         <p className="text-xs text-halo-text-muted mt-1">
-          Review creative provider applications, verify studio credentials, and manage suspensions.
+          Approve new storefronts, give storefronts to their owners, and suspend ones that break the rules. Each owner has their own provider account, separate from admin accounts.
         </p>
       </div>
 
@@ -57,7 +58,7 @@ export default function AdminProvidersPage() {
             <thead className="bg-stone-50 text-xs font-semibold text-halo-text-muted border-b border-halo-border">
               <tr>
                 <th scope="col" className="px-6 py-4">Provider</th>
-                <th scope="col" className="px-6 py-4">Owner / Contact</th>
+                <th scope="col" className="px-6 py-4">Owner</th>
                 <th scope="col" className="px-6 py-4">Location</th>
                 <th scope="col" className="px-6 py-4">Status</th>
                 <th scope="col" className="px-6 py-4 text-right">Moderation Actions</th>
@@ -80,10 +81,16 @@ export default function AdminProvidersPage() {
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 text-xs">
-                      <p className="font-semibold text-halo-ink">{owner?.name || 'Unknown'}</p>
-                      <p className="text-halo-text-muted">{p.contact?.phone}</p>
-                      <p className="text-halo-text-muted">{owner?.email}</p>
+                    <td className="px-6 py-4 text-xs align-top">
+                      {owner ? (
+                        <>
+                          <p className="font-semibold text-halo-ink">{owner.name}</p>
+                          <p className="text-halo-text-muted">{p.contact?.phone || owner.phone}</p>
+                          <p className="text-halo-text-muted">{owner.email}</p>
+                        </>
+                      ) : (
+                        <AssignOwnerForm provider={p} onDone={(text) => setFeedback({ type: 'success', text })} />
+                      )}
                     </td>
 
                     <td className="px-6 py-4 text-xs text-stone-600">
