@@ -22,6 +22,8 @@ const COLUMNS = [
     links: [
       { href: '/signin', label: 'Sign in' },
       { href: '/dashboard', label: 'My bookings' },
+      { href: '/privacy', label: 'Privacy policy' },
+      { href: '/terms', label: 'Terms of use' },
     ],
   },
 ];

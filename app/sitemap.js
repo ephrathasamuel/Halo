@@ -15,6 +15,8 @@ export default function sitemap() {
     { url: `${baseUrl}/studios`, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${baseUrl}/signin`, changeFrequency: 'monthly', priority: 0.3 },
     { url: `${baseUrl}/signup`, changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${baseUrl}/privacy`, changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${baseUrl}/terms`, changeFrequency: 'yearly', priority: 0.2 },
   ];
 
   // Seeded provider storefronts (hardcoded since we can't read localStorage on server)
