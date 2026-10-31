@@ -1,119 +1,130 @@
-# Halo: Creative Space & Equipment Marketplace | Addis Ababa
+# Halo: Creative Space & Equipment Marketplace
 
-Halo is a multi-tenant creative marketplace for studio rental, equipment hire, and event/wedding filming in Addis Ababa, Ethiopia. Built as a frontend-only capstone for the **IBT-QIYAS Full-Stack Software Development Program**.
+Halo is a marketplace for booking photo and film studios, renting production gear and hiring event filming crews from independent providers. It started as a frontend capstone for the **IBT-QIYAS Full-Stack Software Development Program** and now runs on a real backend: shared data in Supabase (PostgreSQL), password and Google sign-in, and every change checked on the server.
 
-Halo hosts independent provider storefronts with custom brand identities. **B Light** is the flagship provider at `/studios/b-light`, featuring an editorial studio space, cinema camera packages, and high-end wedding cinematography services.
+**Live site:** https://halo-seven-orcin.vercel.app · **Setup status:** https://halo-seven-orcin.vercel.app/api/halo/status
 
 ---
 
-## Quick Start
+## Quick start
 
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Run the development server
-npm run dev
-# Open http://localhost:3000 in your browser
-
-# 3. Run the automated test suite (129 tests across 12 files)
-npm test
-
-# 4. Run the code linter (ESLint 9)
+cp .env.example .env.local   # then fill it in (see "Settings" below)
+npm run dev                  # http://localhost:3000
+npm test                     # 134 tests across 14 files
 npm run lint
-
-# 5. Build for production deployment
 npm run build
 ```
 
----
-
-## Accounts and starting data
-
-On first start the server fills its database with the storefront catalogue only: the studios, their listings and portfolio photos. There are no made-up customers, bookings, reviews, quotes, disputes or announcements, and the storefronts' contact details start empty.
-
-- **The admin account** comes from `HALO_ADMIN_EMAIL` / `HALO_ADMIN_PASSWORD` and signs in at `/staff/signin`. It also owns every storefront whose owner has no account (all of the starting storefronts), so it can edit them, fill in real contact details, or hand them over.
-- **Customers** create an account at `/signup` and sign in at `/signin`.
-- **Studio owners** register their studio at `/signup` and sign in at `/staff/signin` once it is approved.
-- **Regional admins** are created by the admin at `/admin/team` with a first password.
-- **Continue with Google** (both sign-in pages) signs in the Halo account with the same verified email, or makes a new customer account. Staff accounts are never created through Google. A Google-only account can set a password later in its profile. Turn it on in Supabase: Authentication → Sign In / Providers → Google (client ID and secret from a Google Cloud OAuth client whose redirect URI is `https://<project>.supabase.co/auth/v1/callback`), and add `http://localhost:3000/auth/callback` and `https://<your-site>/auth/callback` under Authentication → URL Configuration → Redirect URLs.
+Without Supabase settings Halo still runs: it keeps its data in `.halo-data/` files on your computer.
 
 ---
 
-## Core Product Features
+## Who uses Halo
 
-### 1. Flagship Provider: B Light (`/studios/b-light`)
-- **Independent Identity inside Halo**: Custom gold accent branding (`#D4AF37`), hero banner, opening hours, contact badges (Direct Phone, WhatsApp, Telegram), and neighbourhood coordinates.
-- **Three Core Offerings**:
-  1. *Main Studio*: 120m² space with cyclorama wall, lighting rigs, makeup room, and 30-minute turnover cleanup buffers.
-  2. *Cinema Kits & Audio*: Cinema camera packages, 3-point bi-color LED kits, and shotgun/boom audio kits.
-  3. *Weddings & Events Filming*: Full multi-camera event cinematography service with custom quote request workflow.
-- **Curated Portfolio Gallery**: Categorized showcase of weddings, fashion editorials, corporate summits, and music video productions.
+| Account | How it is created | Signs in at | Area |
+|---|---|---|---|
+| **Customer** | Signs up at `/signup`, or with Google | `/signin` | `/dashboard`, bookings, quotes, purchases, profile |
+| **Provider** (storefront owner) | Registers a studio at `/signup`, or an admin gives them an existing storefront | `/signin` | `/owner`: bookings, calendar, listings, portfolio, earnings, reviews, storefront settings |
+| **Regional admin** | Created by the admin at `/admin/team` with a first password | `/staff/signin` | `/admin`, limited to their own country |
+| **Admin** | From `HALO_ADMIN_EMAIL` / `HALO_ADMIN_PASSWORD` | `/staff/signin` | `/admin`: everything |
 
-### 2. Public Catalogue & Filtering (`/browse`)
-- Instant faceted search across 6 Addis Ababa neighbourhoods (Bole, Kazanchis, Arada, Megenagna, Sarbet, Piassa).
-- Filter by offering type (Studios, Equipment, Filming Services), price range (ETB), capacity, and sorting (Price low/high, newest).
-- URL-synchronized query parameters (`?type=...&city=...`) allowing shareable links.
-
-### 3. Studio Availability & Conflict Engine (`lib/rules/availability.js`)
-- Studio bookings occupy an expanded window `[start - bufferMinutes, end + bufferMinutes]`. Two confirmed or in-progress bookings cannot overlap.
-- Equipment availability dynamically computes physical inventory minus concurrent active bookings.
-- Minimum rental duration enforcement (e.g., minimum 2 hours for professional studio spaces).
-
-### 4. Mock TeleBirr Checkout (`/checkout`)
-- Simulated Ethiopian mobile payment interface branded with TeleBirr styling.
-- Clearly displays mock transaction references (`SIM-TB-XXXXXX`), platform fee calculations (10%), refundable security deposits, and a *Complete Demo Payment* action.
-
-### 5. Event Filming & Versioned Quotes (`/events/[id]` & `/owner/requests/[id]`)
-- Multi-step production pipeline: `submitted` → `quoted` (v1, v2...) → `accepted` → `confirmed` → `in_progress` → `completed` → `delivered` → `reviewed`.
-- Versioned quote composer allowing provider owners to revise line items, validity windows, and pricing while archiving previous revisions.
-
-### 6. Owner Hub & Recharts Financials (`/owner/*`)
-- Visual 14-day schedule carousel with turnover cleanup buffer blocks and maintenance blackouts.
-- Storefront settings customizer with live brand color hex picker (`--brand-color`).
-- Revenue analytics chart built with Recharts displaying Gross Volume, 10% Platform Fee, and Net Owner Earnings.
-- 1-click CSV data export for booking registers and accounting reports.
-
-### 7. Admin Governance Portal (`/admin/*`)
-- One-click provider moderation (`pending` → `approved` / `suspended`).
-- Listing moderation (`pending` → `approved` / `rejected`).
-- User account suspensions and reinstatements.
-- Dispute arbitration center linking target records and recording formal resolution notes.
-- Broadcast system for platform-wide announcements.
+- **Admins and providers are separate accounts.** An admin owns no storefront.
+- **`/staff/signin` is for admins only.** It is a page of its own, with no site header and no Google button. Customers and providers use `/signin`, and each lands in their own area.
+- **Passwords set by an admin are temporary.** When an admin creates a regional admin, gives a storefront to a new owner, or resets someone's password, that person must choose their own password before doing anything else.
+- **Continue with Google** (on `/signin`) signs into the Halo account with the same verified email, or creates a new customer account. Admin accounts are never created through Google. A Google-only account can set a password later in its profile.
 
 ---
 
-## Architectural Hard Rules & Disclaimers
+## Starting data
 
-1. **Server and database**: All records live on the server: in Supabase (`halo_records`, see `supabase/setup.sql`) when it is configured, otherwise in `.halo-data/` files. Browsers keep only a read copy of what the server sends them and the checkout draft (`sessionStorage`). Every change runs Halo's domain functions on the server (`app/actions/halo.js`), as the user in the signed `halo_session` cookie.
-2. **Safe Storage**: Reads go through `readStorage(key, fallback)` which never throws and auto-recovers from corrupted JSON.
-3. **Guarded Writes**: Every domain write verifies in strict sequence: Session → Role → Ownership → State Machine Transition (`assertTransition`) → Input Validation.
-4. **Server/Client Boundary**: Prerendered layouts, metadata, and sitemaps execute as Server Components; all storage-reactive views are Client Components (see `BOUNDARY.md`).
-5. **Truthful Documentation**: Accounts use passwords (stored as scrypt hashes) and a signed, httpOnly session cookie; the guarded-write checks run on the server, so they cannot be skipped from the browser. Still to come: role-based filtering of what each user can *read* (today the server sends every collection except passwords), and real payments (checkout is still the simulated TeleBirr flow).
+A brand-new database starts with the storefront catalogue only: 7 studios, their listings and portfolio photos. There are no made-up customers, bookings, reviews, quotes, disputes or announcements, and the storefronts' contact details start empty.
+
+The starting storefronts have **no owner**. People can browse them, but they can't book them until an admin gives each one to its real owner: **Admin → Storefronts → Add owner** (the owner's name, email and a first password; leave the password empty if they already have a Halo account).
 
 ---
 
-## Verification & Test Suite
+## Features
 
-The project includes an extensive automated test suite run via **Vitest**:
+### Customers
+- Browse and search studios, equipment and filming services, with filters for type, country, region, city, price and capacity. Filters live in the URL, so a search can be shared.
+- Book studios and equipment by the hour, with live availability (studio turnover buffers, equipment stock).
+- Request event-filming quotes, accept a quote version, and follow the job to delivery.
+- Buy items providers list for sale, leave reviews, and open disputes.
+
+### Providers
+- Storefront with its own brand colour, logo, cover, hours, map location and contact buttons.
+- Listings of four kinds (studio, equipment, service, item for sale), with photos and custom details.
+- Bookings inbox, 14-day calendar with buffers and blackouts, versioned quote composer, reviews and replies.
+- Earnings chart (gross, 10% Halo fee, net) and CSV export.
+- An account with several storefronts switches between them on the dashboard.
+
+### Admins
+- **Taking bookings** switch: pause new bookings, quote requests and purchases across Halo, with a message for customers. Bookings already made carry on.
+- Storefront approval, giving storefronts to their owners, listing moderation, user suspension, password resets.
+- Disputes, announcements (shown as a full-width bar under the header on the home page), reports and per-country overview.
+- Regional admins for each country, each seeing only their own country.
+
+### Site
+- Privacy policy (`/privacy`) and terms of use (`/terms`), linked in the footer.
+- `/api/halo/status` shows in plain words whether the database, Google sign-in, admin account and session secret are set up. It never shows keys or personal data.
+
+### Not built yet
+- **Real payments.** Checkout is still a simulated TeleBirr flow (`SIM-TB-…` references). Chapa is planned.
+
+---
+
+## How it works
+
+1. **One source of truth on the server.** All records live in Supabase, in the table `halo_records` (see `supabase/setup.sql`), or in `.halo-data/` files when Supabase isn't set up. If the database can't be reached, the site keeps working on files and retries every minute.
+2. **Every change runs on the server.** Browsers call `callDomain` in `app/actions/halo.js`, which runs Halo's domain functions (`lib/domain/*`) as the user in the signed `halo_session` cookie. Only allowlisted functions can be called.
+3. **Guarded writes.** Each write checks, in order: session, role, ownership, state-machine transition, then input. Prices, deposits and owners always come from stored records, never from what the browser sent.
+4. **Each role reads only what it may see** (`lib/server/visibility.js`). For example, other people's bookings reach a customer only as anonymous busy times, and visitors who aren't signed in never receive emails or phone numbers. Password hashes never leave the server.
+5. **Sign-in.** Passwords are stored as scrypt hashes, and sign-in locks for 10 minutes after 5 wrong passwords. Changing a password signs out the account's other devices. Google sign-in goes through Supabase Auth (PKCE flow), and Supabase only confirms the email; the account and its roles stay in Halo.
+
+---
+
+## Settings
+
+The Supabase project address and publishable key are public by design, so they live in `lib/supabaseProject.js`. Everything else goes in `.env.local` locally, and under **Vercel → Settings → Environment Variables** for the live site:
+
+| Variable | What it is |
+|---|---|
+| `SUPABASE_SECRET_KEY` | Supabase → Project Settings → API Keys → secret key. Without it, data stays in `.halo-data/`. |
+| `HALO_SESSION_SECRET` | Long random text that signs sign-in cookies: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
+| `HALO_ADMIN_EMAIL`, `HALO_ADMIN_PASSWORD` | The global admin account. Write `$` as `\$`. |
+| `NEXT_PUBLIC_SITE_URL` | The site's address (`http://localhost:3000` locally). |
+| `NEXT_PUBLIC_HALO_CONTACT_EMAIL` | Optional public contact email shown on the privacy and terms pages. |
+
+**Supabase setup, once:**
+1. **SQL Editor → New query:** paste `supabase/setup.sql` and click **Run**.
+2. **Google sign-in:** go to Authentication → Sign In / Providers → Google, switch it on, and paste the Client ID and secret. They come from a Google Cloud OAuth client (Web application) whose redirect URI is the callback URL shown on that Supabase page.
+3. **URL Configuration:** set **Site URL** to the live address, and add `https://<your-site>/auth/callback` and `http://localhost:3000/auth/callback` under Redirect URLs.
+
+---
+
+## Tests
 
 ```bash
-npm test
+npm test   # Vitest: 134 tests, 14 files
 ```
 
-- **Storage Layer (`storage.test.js`)**: Tests quota handling, safe fallbacks, and automatic recovery from malformed JSON.
-- **Domain State Machines (`transitions.test.js`)**: Validates hourly booking and event request lifecycles.
-- **Availability Engine (`bookings.test.js`)**: Tests studio buffer windows and equipment stock limits.
-- **Public Visibility (`publicListings.test.js`)**: Confirms pending/suspended providers and draft/rejected listings are never public.
-- **Owner & Customer Lifecycles (`ownerCustomer.test.js`)**: Tests storefront customization, portfolio management, and booking transitions.
-- **Quotes, Reviews, Disputes & Admin (`phase5.test.js`)**: Tests quote revision counters, 1-review/1-reply limits, dispute mediation, and user suspension.
-- **Automated Negative Test Matrix (`negative.test.js`)**: 10 strict negative invariant tests covering unauthorized writes, cross-user cancellations, suspended users, expired quotes, and stock conflicts.
+- **Storage** (`storage.test.js`): safe reads, quota handling, recovery from corrupted data.
+- **State machines** (`transitions.test.js`): booking and event-request lifecycles.
+- **Availability** (`bookings.test.js`): studio buffer windows and equipment stock.
+- **Public visibility** (`publicListings.test.js`): pending or suspended storefronts and draft listings never show publicly.
+- **Owners and customers** (`ownerCustomer.test.js`, `providerTools.test.js`): storefront editing, portfolio, listings, bookings.
+- **Quotes, reviews, disputes, admin** (`phase5.test.js`, `regional.test.js`): quote versions, review limits, disputes, suspensions, regional scope.
+- **Server rules** (`serverRules.test.js`, `bookingsPause.test.js`): prices taken from stored listings, and the pause switch.
+- **Negative matrix** (`negative.test.js`): unauthorised writes, cross-user changes, suspended users, expired quotes, stock conflicts.
+- Plus `format`, `geo` and `safeReturnPath` helpers.
 
-**Current Test Status:** `129 passed` across `12 test files` (0 failures).
+A Playwright end-to-end run (more than 40 checks) covers sign-up, booking, Google sign-in, roles, data visibility, giving a storefront to its owner, forced password change, the pause switch and the announcement bar. It runs against both file storage and a stand-in for Supabase.
 
 ---
 
-## License & Academic Attribution
+## License & attribution
 
-Created for the **IBT-QIYAS Full-Stack Software Development Program** (Module 3 Frontend Capstone).
+Created for the **IBT-QIYAS Full-Stack Software Development Program**.
 All rights reserved © 2026 Halo Marketplace.
