@@ -4,6 +4,11 @@ Halo is a marketplace for booking photo and film studios, renting production gea
 
 **Live site:** https://halo-seven-orcin.vercel.app · **Setup status:** https://halo-seven-orcin.vercel.app/api/halo/status
 
+<p>
+  <img src="docs/screenshots/home.jpg" alt="Halo home page: search for studios, gear and film crews" width="49%" />
+  <img src="docs/screenshots/browse.jpg" alt="Halo browse page with filters by type, place, price and date" width="49%" />
+</p>
+
 ---
 
 ## Quick start
